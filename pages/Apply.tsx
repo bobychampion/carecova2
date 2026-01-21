@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TREATMENT_CATEGORIES } from '../constants';
 import { LoanApplication, LoanStatus } from '../types';
-import { getFinancingAdvice } from '../services/geminiService';
 
 interface ApplyProps {
   onApply: (loan: LoanApplication) => void;
@@ -12,7 +11,6 @@ interface ApplyProps {
 const Apply: React.FC<ApplyProps> = ({ onApply }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [advice, setAdvice] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -45,14 +43,6 @@ const Apply: React.FC<ApplyProps> = ({ onApply }) => {
       setLoading(false);
       navigate('/track');
     }, 1500);
-  };
-
-  const fetchAdvice = async () => {
-    if (!formData.treatmentType || !formData.estimatedCost) return;
-    setLoading(true);
-    const res = await getFinancingAdvice(formData.treatmentType, parseFloat(formData.estimatedCost));
-    setAdvice(res);
-    setLoading(false);
   };
 
   return (
@@ -165,26 +155,6 @@ const Apply: React.FC<ApplyProps> = ({ onApply }) => {
                 ))}
               </div>
             </div>
-
-            {advice && (
-              <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 text-sm text-emerald-800 animate-in fade-in duration-500">
-                <div className="flex gap-3">
-                  <svg className="w-5 h-5 text-emerald-500 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/></svg>
-                  <p><strong>Financing Tip:</strong> {advice}</p>
-                </div>
-              </div>
-            )}
-
-            {!advice && formData.treatmentType && (
-              <button 
-                type="button" 
-                onClick={fetchAdvice}
-                className="text-xs text-blue-600 hover:text-blue-700 font-bold uppercase tracking-wider flex items-center gap-2 group"
-              >
-                <svg className="w-4 h-4 group-hover:rotate-12 transition-transform" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-                Get Medical Financing Advice
-              </button>
-            )}
 
             <button
               disabled={loading}

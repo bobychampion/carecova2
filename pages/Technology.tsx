@@ -4,15 +4,6 @@ import React from 'react';
 const Technology: React.FC = () => {
   const stackItems = [
     {
-      title: "Google Gemini AI",
-      description: "We leverage the power of Gemini 3 Pro to provide real-time medical financing advice and intelligent credit assessments.",
-      icon: (
-        <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-      )
-    },
-    {
       title: "React 19 Framework",
       description: "Built on the latest industry standards for ultra-fast performance, interactive interfaces, and seamless patient experiences.",
       icon: (
