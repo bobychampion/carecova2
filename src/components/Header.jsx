@@ -16,7 +16,6 @@ export default function Header() {
         </Link>
         <nav className="nav">
           <Link to="/how-it-works">How It Works</Link>
-          <Link to="/partners">Partners</Link>
           <Link to="/apply">Apply</Link>
           <Link to="/track">Track</Link>
         </nav>
