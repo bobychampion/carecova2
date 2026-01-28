@@ -1,10 +1,27 @@
 import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import Button from '../components/Button'
+import SecurityBadge from '../components/SecurityBadge'
+import { hospitalService } from '../services/hospitalService'
 import heroImage from '../assets/hero-family.jpg'
 
 export default function Home() {
+  const [hospitals, setHospitals] = useState([])
+
+  useEffect(() => {
+    const loadHospitals = async () => {
+      try {
+        const data = await hospitalService.getAllHospitals()
+        setHospitals(data.slice(0, 6)) // Show first 6 hospitals
+      } catch (error) {
+        console.error('Error loading hospitals:', error)
+      }
+    }
+    loadHospitals()
+  }, [])
+
   return (
     <>
       <Header />
@@ -22,8 +39,14 @@ export default function Home() {
                 and pay back in flexible installments.
               </p>
               <div className="hero-actions">
+                <Link to="/eligibility">
+                  <Button variant="primary">Check Eligibility</Button>
+                </Link>
                 <Link to="/apply">
-                  <Button variant="primary">Start Your Application</Button>
+                  <Button variant="secondary">Start Application</Button>
+                </Link>
+                <Link to="/resume">
+                  <Button variant="ghost">Resume Application</Button>
                 </Link>
                 <Link to="/how-it-works">
                   <Button variant="ghost">How it works</Button>
@@ -106,6 +129,36 @@ export default function Home() {
           </div>
         </section>
 
+        {hospitals.length > 0 && (
+          <section className="section">
+            <div className="container">
+              <div className="section-header center">
+                <h2>Available at These Partner Hospitals</h2>
+                <p>We partner with trusted healthcare providers across Nigeria</p>
+              </div>
+              <div className="hospitals-showcase">
+                {hospitals.map((hospital) => (
+                  <div key={hospital.id} className="hospital-showcase-item">
+                    {hospital.logo && (
+                      <div className="hospital-showcase-logo">
+                        <img src={hospital.logo} alt={hospital.name} onError={(e) => {
+                          e.target.style.display = 'none'
+                        }} />
+                      </div>
+                    )}
+                    <span className="hospital-showcase-name">{hospital.name}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="section-cta">
+                <Link to="/partners">
+                  <Button variant="secondary">View All Partners</Button>
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
+
         <section className="section section-accent">
           <div className="container">
             <div className="section-header center">
@@ -134,6 +187,12 @@ export default function Home() {
                 <p>Specialized surgeries and corrective procedures.</p>
               </article>
             </div>
+          </div>
+        </section>
+
+        <section className="section">
+          <div className="container">
+            <SecurityBadge />
           </div>
         </section>
 

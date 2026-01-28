@@ -1,0 +1,20 @@
+export default function SecurityBadge({ variant = 'default' }) {
+  if (variant === 'inline') {
+    return (
+      <div className="security-badge-inline">
+        <span className="security-icon">🔒</span>
+        <span>Payments secured via wallet & direct integrations</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="security-badge">
+      <div className="security-badge-icon">🔒</div>
+      <div className="security-badge-content">
+        <h4>Secure Payments</h4>
+        <p>Payments secured via wallet & direct integrations</p>
+      </div>
+    </div>
+  )
+}

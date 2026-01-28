@@ -71,82 +71,60 @@ export default function Track() {
             </div>
 
             {loan && (
-              <div className="loan-details">
-                <div className="loan-header">
-                  <h2>Application Details - {loan.id}</h2>
-                  <StatusBadge status={loan.status} />
-                </div>
+              <>
+                {loan.status === 'approved' || loan.status === 'active' ? (
+                  <RepaymentDashboard loan={loan} />
+                ) : (
+                  <div className="loan-details">
+                    <div className="loan-header">
+                      <h2>Application Details - {loan.id}</h2>
+                      <StatusBadge status={loan.status} />
+                    </div>
 
-                <div className="loan-info-grid">
-                  <div className="info-item">
-                    <strong>Patient Name:</strong>
-                    <p>{loan.patientName}</p>
-                  </div>
-                  <div className="info-item">
-                    <strong>Hospital:</strong>
-                    <p>{loan.hospital}</p>
-                  </div>
-                  <div className="info-item">
-                    <strong>Treatment Category:</strong>
-                    <p>{loan.treatmentCategory}</p>
-                  </div>
-                  <div className="info-item">
-                    <strong>Estimated Cost:</strong>
-                    <p>₦{loan.estimatedCost.toLocaleString()}</p>
-                  </div>
-                  {loan.approvedAmount && (
-                    <div className="info-item">
-                      <strong>Approved Amount:</strong>
-                      <p>₦{loan.approvedAmount.toLocaleString()}</p>
+                    <div className="loan-info-grid">
+                      <div className="info-item">
+                        <strong>Patient Name:</strong>
+                        <p>{loan.patientName}</p>
+                      </div>
+                      <div className="info-item">
+                        <strong>Hospital:</strong>
+                        <p>{loan.hospital}</p>
+                      </div>
+                      <div className="info-item">
+                        <strong>Treatment Category:</strong>
+                        <p>{loan.treatmentCategory}</p>
+                      </div>
+                      <div className="info-item">
+                        <strong>Estimated Cost:</strong>
+                        <p>₦{loan.estimatedCost.toLocaleString()}</p>
+                      </div>
+                      <div className="info-item">
+                        <strong>Status:</strong>
+                        <p>
+                          <StatusBadge status={loan.status} />
+                        </p>
+                      </div>
+                      <div className="info-item">
+                        <strong>Submitted:</strong>
+                        <p>{new Date(loan.submittedAt).toLocaleDateString()}</p>
+                      </div>
+                      {loan.approvedAt && (
+                        <div className="info-item">
+                          <strong>Approved:</strong>
+                          <p>{new Date(loan.approvedAt).toLocaleDateString()}</p>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {loan.monthlyInstallment && (
-                    <div className="info-item">
-                      <strong>Monthly Installment:</strong>
-                      <p>₦{loan.monthlyInstallment.toLocaleString()}</p>
-                    </div>
-                  )}
-                  {loan.outstandingBalance !== undefined && (
-                    <div className="info-item">
-                      <strong>Outstanding Balance:</strong>
-                      <p>₦{loan.outstandingBalance.toLocaleString()}</p>
-                    </div>
-                  )}
-                  {loan.nextPayment && (
-                    <div className="info-item">
-                      <strong>Next Payment:</strong>
-                      <p>
-                        ₦{loan.nextPayment.amount.toLocaleString()} due{' '}
-                        {new Date(loan.nextPayment.dueDate).toLocaleDateString()}
-                      </p>
-                    </div>
-                  )}
-                  <div className="info-item">
-                    <strong>Submitted:</strong>
-                    <p>{new Date(loan.submittedAt).toLocaleDateString()}</p>
-                  </div>
-                  {loan.approvedAt && (
-                    <div className="info-item">
-                      <strong>Approved:</strong>
-                      <p>{new Date(loan.approvedAt).toLocaleDateString()}</p>
-                    </div>
-                  )}
-                </div>
 
-                {loan.repaymentSchedule && loan.repaymentSchedule.length > 0 && (
-                  <div className="repayment-section">
-                    <h3>Repayment Schedule</h3>
-                    <RepaymentSchedule schedule={loan.repaymentSchedule} />
+                    {loan.rejectionReason && (
+                      <div className="rejection-notice">
+                        <h3>Rejection Reason</h3>
+                        <p>{loan.rejectionReason}</p>
+                      </div>
+                    )}
                   </div>
                 )}
-
-                {loan.rejectionReason && (
-                  <div className="rejection-notice">
-                    <h3>Rejection Reason</h3>
-                    <p>{loan.rejectionReason}</p>
-                  </div>
-                )}
-              </div>
+              </>
             )}
           </div>
         </section>

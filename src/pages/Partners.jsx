@@ -3,12 +3,17 @@ import Header from '../components/Header'
 import Footer from '../components/Footer'
 import { hospitalService } from '../services/hospitalService'
 import Input from '../components/Input'
+import Select from '../components/Select'
+import HospitalCard from '../components/HospitalCard'
 
 export default function Partners() {
   const [hospitals, setHospitals] = useState([])
   const [filteredHospitals, setFilteredHospitals] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
+  const [cityFilter, setCityFilter] = useState('')
   const [loading, setLoading] = useState(true)
+
+  const cities = ['All Cities', ...new Set(hospitals.map((h) => h.city).filter(Boolean))]
 
   useEffect(() => {
     const loadHospitals = async () => {
@@ -58,14 +63,24 @@ export default function Partners() {
 
         <section className="section">
           <div className="container">
-            <div className="search-section">
-              <Input
-                label="Search hospitals"
-                type="text"
-                placeholder="Search by name, location, or specialty..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+            <div className="partners-filters">
+              <div className="filter-group">
+                <Input
+                  label="Search hospitals"
+                  type="text"
+                  placeholder="Search by name, location, or specialty..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="filter-group">
+                <Select
+                  label="Filter by City"
+                  options={cities.map((city) => ({ value: city, label: city }))}
+                  value={cityFilter}
+                  onChange={(e) => setCityFilter(e.target.value)}
+                />
+              </div>
             </div>
 
             {loading ? (
@@ -75,24 +90,9 @@ export default function Partners() {
                 <p>No hospitals found matching your search.</p>
               </div>
             ) : (
-              <div className="hospitals-grid">
+              <div className="hospitals-grid-enhanced">
                 {filteredHospitals.map((hospital) => (
-                  <article key={hospital.id} className="hospital-card">
-                    <h3>{hospital.name}</h3>
-                    <p className="hospital-location">{hospital.location}</p>
-                    <div className="hospital-specialties">
-                      <strong>Specialties:</strong>
-                      <ul>
-                        {hospital.specialties.map((specialty, index) => (
-                          <li key={index}>{specialty}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div className="hospital-contact">
-                      <strong>Contact:</strong>
-                      <p>{hospital.contact}</p>
-                    </div>
-                  </article>
+                  <HospitalCard key={hospital.id} hospital={hospital} />
                 ))}
               </div>
             )}
