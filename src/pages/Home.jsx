@@ -65,7 +65,7 @@ export default function Home() {
               />
               <div className="floating-card">
                 <p className="floating-title">Average approval</p>
-                <p className="floating-value">36 hrs</p>
+                <p className="floating-value">24 hrs</p>
                 <p className="floating-note">Across partner clinics</p>
               </div>
             </div>

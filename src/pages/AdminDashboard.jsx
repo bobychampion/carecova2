@@ -87,6 +87,17 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleModifyOffer = async (loanId, terms) => {
+    try {
+      const updated = await adminService.modifyOffer(loanId, terms)
+      await loadLoans()
+      setSelectedLoan(updated)
+    } catch (error) {
+      console.error('Error modifying offer:', error)
+      alert('Error modifying offer: ' + error.message)
+    }
+  }
+
   const handleRecordPayment = async (loanId, amount, paymentDate) => {
     try {
       await adminService.recordPayment(loanId, amount, paymentDate)
@@ -228,6 +239,7 @@ export default function AdminDashboard() {
           onClose={() => setSelectedLoan(null)}
           onApprove={handleApprove}
           onReject={handleReject}
+          onModifyOffer={handleModifyOffer}
           onRecordPayment={handleRecordPayment}
         />
       )}

@@ -2,22 +2,7 @@ import { Link } from 'react-router-dom'
 import Button from './Button'
 import ProgressBar from './ProgressBar'
 import RepaymentSchedule from './RepaymentSchedule'
-
-function StatusBadge({ status }) {
-  const statusConfig = {
-    pending: { label: 'Pending', className: 'status-badge--pending' },
-    approved: { label: 'Approved', className: 'status-badge--approved' },
-    active: { label: 'Active', className: 'status-badge--active' },
-    completed: { label: 'Completed', className: 'status-badge--completed' },
-    rejected: { label: 'Rejected', className: 'status-badge--rejected' },
-  }
-
-  const config = statusConfig[status] || statusConfig.pending
-
-  return (
-    <span className={`status-badge ${config.className}`}>{config.label}</span>
-  )
-}
+import StatusBadge from './StatusBadge'
 
 export default function RepaymentDashboard({ loan }) {
   if (!loan || !loan.repaymentSchedule) {
@@ -103,21 +88,5 @@ export default function RepaymentDashboard({ loan }) {
         <RepaymentSchedule schedule={loan.repaymentSchedule} />
       </div>
     </div>
-  )
-}
-
-function StatusBadge({ status }) {
-  const statusConfig = {
-    pending: { label: 'Pending', className: 'status-badge--pending' },
-    approved: { label: 'Approved', className: 'status-badge--approved' },
-    active: { label: 'Active', className: 'status-badge--active' },
-    completed: { label: 'Completed', className: 'status-badge--completed' },
-    rejected: { label: 'Rejected', className: 'status-badge--rejected' },
-  }
-
-  const config = statusConfig[status] || statusConfig.pending
-
-  return (
-    <span className={`status-badge ${config.className}`}>{config.label}</span>
   )
 }

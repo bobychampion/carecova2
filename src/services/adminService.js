@@ -4,7 +4,7 @@ import { trackingService } from './trackingService'
 const ADMIN_STORAGE_KEY = 'carecova_admin_session'
 const ADMIN_CREDENTIALS = {
   username: 'admin',
-  password: 'admin123', // In production, this would be hashed
+  password: 'admin123',
 }
 
 export const adminService = {
@@ -67,14 +67,15 @@ export const adminService = {
         const approvedAmount = terms.approvedAmount || loan.estimatedCost
         const duration = terms.duration || loan.preferredDuration
 
-        // Calculate repayment schedule
         const repayment = trackingService.calculateRepaymentSchedule(
           approvedAmount,
           duration
         )
 
         loan.status = 'approved'
-        loan.approvedAt = new Date().toISOString()
+        const now = new Date().toISOString()
+        loan.approvedAt = now
+        loan.decidedAt = now
         loan.approvedAmount = approvedAmount
         loan.approvedDuration = duration
         loan.repaymentSchedule = repayment.schedule
@@ -82,7 +83,47 @@ export const adminService = {
         loan.monthlyInstallment = repayment.monthlyPayment
         loan.outstandingBalance = repayment.totalAmount
 
-        // Save to localStorage
+        const STORAGE_KEY = 'carecova_loans'
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(loans))
+
+        resolve(loan)
+      } catch (error) {
+        reject(error)
+      }
+    })
+  },
+
+  modifyOffer: async (loanId, terms) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const loans = await loanService.getAllApplications()
+        const loanIndex = loans.findIndex((l) => l.id === loanId)
+
+        if (loanIndex === -1) {
+          reject(new Error('Loan not found'))
+          return
+        }
+
+        const loan = loans[loanIndex]
+        if (loan.status !== 'approved') {
+          reject(new Error('Only approved offers can be modified'))
+          return
+        }
+
+        const approvedAmount = terms.approvedAmount ?? loan.approvedAmount
+        const duration = terms.duration ?? loan.approvedDuration ?? loan.preferredDuration
+        const repayment = trackingService.calculateRepaymentSchedule(approvedAmount, duration)
+        const now = new Date().toISOString()
+
+        loan.approvedAmount = approvedAmount
+        loan.approvedDuration = duration
+        loan.repaymentSchedule = repayment.schedule
+        loan.totalRepayment = repayment.totalAmount
+        loan.monthlyInstallment = repayment.monthlyPayment
+        loan.outstandingBalance = repayment.totalAmount
+        loan.modifiedAt = now
+        loan.modifyReason = terms.reason ?? null
+
         const STORAGE_KEY = 'carecova_loans'
         localStorage.setItem(STORAGE_KEY, JSON.stringify(loans))
 
@@ -105,11 +146,56 @@ export const adminService = {
         }
 
         const loan = loans[loanIndex]
+        const now = new Date().toISOString()
         loan.status = 'rejected'
         loan.rejectionReason = reason || 'Application rejected'
-        loan.rejectedAt = new Date().toISOString()
+        loan.rejectedAt = now
+        loan.decidedAt = now
 
-        // Save to localStorage
+        const STORAGE_KEY = 'carecova_loans'
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(loans))
+
+        resolve(loan)
+      } catch (error) {
+        reject(error)
+      }
+    })
+  },
+
+  modifyOffer: async (loanId, terms) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const loans = await loanService.getAllApplications()
+        const loanIndex = loans.findIndex((l) => l.id === loanId)
+
+        if (loanIndex === -1) {
+          reject(new Error('Loan not found'))
+          return
+        }
+
+        const loan = loans[loanIndex]
+        if (loan.status !== 'approved') {
+          reject(new Error('Only approved offers can be modified'))
+          return
+        }
+
+        const approvedAmount = terms.approvedAmount ?? loan.approvedAmount
+        const duration = terms.duration ?? loan.approvedDuration ?? loan.preferredDuration
+        const repayment = trackingService.calculateRepaymentSchedule(
+          approvedAmount,
+          duration
+        )
+
+        const now = new Date().toISOString()
+        loan.approvedAmount = approvedAmount
+        loan.approvedDuration = duration
+        loan.repaymentSchedule = repayment.schedule
+        loan.totalRepayment = repayment.totalAmount
+        loan.monthlyInstallment = repayment.monthlyPayment
+        loan.outstandingBalance = repayment.totalAmount
+        loan.modifiedAt = now
+        loan.modifyReason = terms.reason ?? null
+
         const STORAGE_KEY = 'carecova_loans'
         localStorage.setItem(STORAGE_KEY, JSON.stringify(loans))
 
@@ -138,18 +224,15 @@ export const adminService = {
           return
         }
 
-        // Find the next unpaid installment
         const nextUnpaid = loan.repaymentSchedule.find((p) => !p.paid)
         if (!nextUnpaid) {
           reject(new Error('All installments have been paid'))
           return
         }
 
-        // Mark as paid
         nextUnpaid.paid = true
         nextUnpaid.paidDate = paymentDate || new Date().toISOString().split('T')[0]
 
-        // Update outstanding balance
         const paidAmount = loan.repaymentSchedule
           .filter((p) => p.paid)
           .reduce((sum, p) => sum + p.amount, 0)
@@ -159,14 +242,12 @@ export const adminService = {
         )
         loan.outstandingBalance = totalAmount - paidAmount
 
-        // Update status if fully paid
         if (loan.outstandingBalance <= 0) {
           loan.status = 'completed'
         } else if (loan.status === 'approved') {
           loan.status = 'active'
         }
 
-        // Save to localStorage
         const STORAGE_KEY = 'carecova_loans'
         localStorage.setItem(STORAGE_KEY, JSON.stringify(loans))
 

@@ -12,9 +12,10 @@ import { hospitalService } from '../services/hospitalService'
 import { applicationService } from '../services/applicationService'
 import { validateStep } from '../utils/validation'
 import ConsentCheckbox from '../components/ConsentCheckbox'
+import DocumentUpload from '../components/DocumentUpload'
 import SecurityBadge from '../components/SecurityBadge'
 
-const TOTAL_STEPS = 4
+const TOTAL_STEPS = 5
 
 export default function Apply() {
   const navigate = useNavigate()
@@ -37,10 +38,20 @@ export default function Apply() {
     treatmentCategory: '',
     estimatedCost: '',
     preferredDuration: 6,
+    employmentType: '',
     consentDataProcessing: false,
     consentTerms: false,
     consentMarketing: false,
+    documents: {},
+    employerName: '',
+    jobTitle: '',
   })
+
+  const employmentTypeOptions = [
+    { value: '', label: 'Select employment sector' },
+    { value: 'private', label: 'Private sector' },
+    { value: 'government', label: 'Government / public sector' },
+  ]
 
   const treatmentCategories = [
     { value: '', label: 'Select Treatment Category' },
@@ -110,6 +121,11 @@ export default function Apply() {
         }
       }
       loadPreviousData()
+    } else if (employmentType) {
+      setFormData((prev) => ({
+        ...prev,
+        employmentType,
+      }))
     }
   }, [draftId])
 
@@ -243,6 +259,37 @@ export default function Apply() {
                 error={errors.phone}
                 required
               />
+
+              <div className="form-section-label">
+                <h3>Work / employment details</h3>
+                <p className="step-description">Used for eligibility and verification (e.g. payroll for government sector).</p>
+              </div>
+              <Select
+                label="Employment sector"
+                options={employmentTypeOptions}
+                value={formData.employmentType}
+                onChange={(e) => handleChange('employmentType', e.target.value)}
+                onBlur={() => {
+                  const stepErrors = validateStep(1, formData)
+                  setErrors((prev) => ({ ...prev, ...stepErrors }))
+                }}
+                error={errors.employmentType}
+                required
+              />
+              <Input
+                label="Employer name (optional)"
+                type="text"
+                placeholder="e.g. Federal Ministry of Health"
+                value={formData.employerName}
+                onChange={(e) => handleChange('employerName', e.target.value)}
+              />
+              <Input
+                label="Job title (optional)"
+                type="text"
+                placeholder="e.g. Civil servant, Accountant"
+                value={formData.jobTitle}
+                onChange={(e) => handleChange('jobTitle', e.target.value)}
+              />
             </div>
           </div>
         )
@@ -330,6 +377,19 @@ export default function Apply() {
         )
 
       case 4:
+        return (
+          <div className="step-content">
+            <h2>Documents / KYC</h2>
+            <p className="step-description">Upload your treatment estimate and ID. Pay slip is optional.</p>
+            <DocumentUpload
+              documents={formData.documents}
+              onChange={(documents) => handleChange('documents', documents)}
+              errors={errors.documents || {}}
+            />
+          </div>
+        )
+
+      case 5:
         const interestRate = 0.025
         const totalRepayment = formData.estimatedCost
           ? parseFloat(formData.estimatedCost) * (1 + interestRate * formData.preferredDuration)
@@ -357,6 +417,23 @@ export default function Apply() {
               </div>
 
               <div className="review-card">
+                <h3>Work / employment details</h3>
+                <div className="review-item">
+                  <strong>Employment sector:</strong> {formData.employmentType === 'government' ? 'Government / public sector' : formData.employmentType === 'private' ? 'Private sector' : 'Not provided'}
+                </div>
+                {formData.employerName && (
+                  <div className="review-item">
+                    <strong>Employer:</strong> {formData.employerName}
+                  </div>
+                )}
+                {formData.jobTitle && (
+                  <div className="review-item">
+                    <strong>Job title:</strong> {formData.jobTitle}
+                  </div>
+                )}
+              </div>
+
+              <div className="review-card">
                 <h3>Treatment Details</h3>
                 <div className="review-item">
                   <strong>Hospital:</strong> {formData.hospital || 'Not selected'}
@@ -381,6 +458,55 @@ export default function Apply() {
                   <strong>Total Repayment:</strong> ₦{Math.round(totalRepayment).toLocaleString()}
                 </div>
               </div>
+
+              {formData.documents && Object.keys(formData.documents).length > 0 && (
+                <div className="review-card">
+                  <h3>Documents</h3>
+                  {formData.documents.treatment_estimate && (
+                    <div className="review-item">
+                      <strong>Treatment estimate:</strong> {formData.documents.treatment_estimate.fileName}
+                    </div>
+                  )}
+                  {formData.documents.id_document && (
+                    <div className="review-item">
+                      <strong>ID document:</strong> {formData.documents.id_document.fileName}
+                    </div>
+                  )}
+                  {formData.documents.payslip && (
+                    <div className="review-item">
+                      <strong>Pay slip:</strong> {formData.documents.payslip.fileName}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="review-card consent-section">
+                <h3>Consent</h3>
+                <p className="step-description">Please confirm the following to submit your application.</p>
+                <ConsentCheckbox
+                  id="consentDataProcessing"
+                  label="I consent to CareCova processing my personal and financial data for this application and for servicing my loan."
+                  required
+                  checked={formData.consentDataProcessing}
+                  onChange={(e) => handleChange('consentDataProcessing', e.target.checked)}
+                  error={errors.consentDataProcessing}
+                />
+                <ConsentCheckbox
+                  id="consentTerms"
+                  label="I have read and accept the Terms and Conditions and the loan agreement."
+                  required
+                  checked={formData.consentTerms}
+                  onChange={(e) => handleChange('consentTerms', e.target.checked)}
+                  error={errors.consentTerms}
+                />
+                <ConsentCheckbox
+                  id="consentMarketing"
+                  label="I agree to receive updates and offers from CareCova (optional)."
+                  required={false}
+                  checked={formData.consentMarketing}
+                  onChange={(e) => handleChange('consentMarketing', e.target.checked)}
+                />
+              </div>
             </div>
           </div>
         )
@@ -403,6 +529,9 @@ export default function Apply() {
                 <p>
                   We'll review your application and get back to you within 24-48
                   hours via SMS or email.
+                </p>
+                <p className="success-hint">
+                  You will receive an offer when approved; you can accept it from the Track page.
                 </p>
                 <div className="success-actions">
                   <Button

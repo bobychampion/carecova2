@@ -4,6 +4,7 @@ import HowItWorks from './pages/HowItWorks'
 import Partners from './pages/Partners'
 import Apply from './pages/Apply'
 import Track from './pages/Track'
+import Offer from './pages/Offer'
 import Calculator from './pages/Calculator'
 import ResumeApplication from './pages/ResumeApplication'
 import EligibilityCheck from './pages/EligibilityCheck'
@@ -38,6 +39,7 @@ function App() {
         <Route path="/resume" element={<ResumeApplication />} />
         <Route path="/eligibility" element={<EligibilityCheck />} />
         <Route path="/track" element={<Track />} />
+        <Route path="/offer/:applicationId" element={<Offer />} />
         <Route path="/calculator" element={<Calculator />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/make-payment" element={<MakePayment />} />

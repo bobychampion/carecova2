@@ -2,7 +2,6 @@ import { sampleLoans } from '../data/sampleLoans'
 
 const STORAGE_KEY = 'carecova_loans'
 
-// Initialize with sample data if localStorage is empty
 const initializeLoans = () => {
   const stored = localStorage.getItem(STORAGE_KEY)
   if (!stored) {
@@ -42,7 +41,6 @@ export const loanService = {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         try {
-          // Validate required fields
           if (
             !applicationData.patientName ||
             !applicationData.phone ||
@@ -65,8 +63,12 @@ export const loanService = {
             treatmentCategory: applicationData.treatmentCategory,
             estimatedCost: parseFloat(applicationData.estimatedCost),
             preferredDuration: parseInt(applicationData.preferredDuration),
+            employmentType: applicationData.employmentType || 'private',
+            employerName: applicationData.employerName || '',
+            jobTitle: applicationData.jobTitle || '',
             status: 'pending',
             submittedAt: new Date().toISOString(),
+            documents: applicationData.documents || {},
           }
 
           loans.push(newLoan)
@@ -98,6 +100,31 @@ export const loanService = {
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve(getLoans())
+      }, 300)
+    })
+  },
+
+  acceptOffer: async (loanId, otp) => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const loans = getLoans()
+        const loan = loans.find((l) => l.id === loanId)
+        if (!loan) {
+          reject(new Error('Application not found'))
+          return
+        }
+        if (loan.status !== 'approved') {
+          reject(new Error('No offer available for this application'))
+          return
+        }
+        const MOCK_OTP = '123456'
+        if (otp !== MOCK_OTP) {
+          reject(new Error('Invalid OTP. For demo use 123456.'))
+          return
+        }
+        loan.offerAcceptedAt = new Date().toISOString()
+        saveLoans(loans)
+        resolve(loan)
       }, 300)
     })
   },

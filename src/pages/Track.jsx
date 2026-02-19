@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, Link } from 'react-router-dom'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import Button from '../components/Button'
 import Input from '../components/Input'
 import StatusBadge from '../components/StatusBadge'
 import RepaymentSchedule from '../components/RepaymentSchedule'
+import RepaymentDashboard from '../components/RepaymentDashboard'
 import { trackingService } from '../services/trackingService'
 
 export default function Track() {
@@ -72,7 +73,15 @@ export default function Track() {
 
             {loan && (
               <>
-                {loan.status === 'approved' || loan.status === 'active' ? (
+                {loan.status === 'approved' && !loan.offerAcceptedAt ? (
+                  <div className="offer-cta-card">
+                    <h3>Your application has been approved</h3>
+                    <p>Review and accept your offer to proceed with your loan.</p>
+                    <Link to={`/offer/${loan.id}`}>
+                      <Button variant="primary">View and accept your offer</Button>
+                    </Link>
+                  </div>
+                ) : (loan.status === 'approved' && loan.offerAcceptedAt) || loan.status === 'active' ? (
                   <RepaymentDashboard loan={loan} />
                 ) : (
                   <div className="loan-details">

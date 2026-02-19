@@ -52,7 +52,7 @@ export const validateStep = (step, formData) => {
 
   switch (step) {
     case 1:
-      // Personal Information
+      // Personal Information + work details
       const nameError = validateRequired(formData.patientName, 'Full name')
       if (nameError) errors.patientName = nameError
 
@@ -61,6 +61,10 @@ export const validateStep = (step, formData) => {
 
       const phoneError = validatePhone(formData.phone)
       if (phoneError) errors.phone = phoneError
+
+      if (!formData.employmentType || !['private', 'government'].includes(formData.employmentType)) {
+        errors.employmentType = 'Employment sector is required'
+      }
       break
 
     case 2:
@@ -83,12 +87,26 @@ export const validateStep = (step, formData) => {
       break
 
     case 4:
+      // Documents / KYC
+      const docs = formData.documents || {}
+      if (!docs.treatment_estimate) {
+        errors.documents = errors.documents || {}
+        errors.documents.treatment_estimate = 'Treatment estimate is required'
+      }
+      if (!docs.id_document) {
+        errors.documents = errors.documents || {}
+        errors.documents.id_document = 'ID document is required'
+      }
+      break
+
+    case 5:
       // Review - validate all fields
       const allErrors = validateStep(1, formData)
       Object.assign(errors, allErrors)
       Object.assign(errors, validateStep(2, formData))
       Object.assign(errors, validateStep(3, formData))
-      
+      Object.assign(errors, validateStep(4, formData))
+
       // Validate consent
       if (!formData.consentDataProcessing) {
         errors.consentDataProcessing = 'Data processing consent is required'
