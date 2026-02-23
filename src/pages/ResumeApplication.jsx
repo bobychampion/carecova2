@@ -96,20 +96,20 @@ export default function ResumeApplication() {
                           <strong>Saved:</strong>{' '}
                           {new Date(draft.savedAt).toLocaleDateString()}
                         </p>
-                        {draft.data.patientName && (
+                        {(draft.data.fullName || draft.data.patientName) && (
                           <p>
-                            <strong>Name:</strong> {draft.data.patientName}
+                            <strong>Name:</strong> {draft.data.fullName || draft.data.patientName}
                           </p>
                         )}
-                        {draft.data.hospital && (
+                        {(draft.data.hospital || (draft.data.hospitalPreference === 'have_hospital' && draft.data.hospitalName)) && (
                           <p>
-                            <strong>Hospital:</strong> {draft.data.hospital}
+                            <strong>Hospital:</strong> {draft.data.hospitalPreference === 'have_hospital' ? draft.data.hospitalName : draft.data.hospital}
                           </p>
                         )}
-                        {draft.data.estimatedCost && (
+                        {(draft.data.requestedAmount || draft.data.estimatedCost) && (
                           <p>
                             <strong>Amount:</strong> ₦
-                            {parseFloat(draft.data.estimatedCost).toLocaleString()}
+                            {parseFloat(draft.data.requestedAmount || draft.data.estimatedCost).toLocaleString()}
                           </p>
                         )}
                       </div>

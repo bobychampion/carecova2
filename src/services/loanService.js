@@ -1,6 +1,9 @@
 import { sampleLoans } from '../data/sampleLoans'
+import { computeRiskScore } from '../utils/riskScoring'
 
 const STORAGE_KEY = 'carecova_loans'
+
+const TENOR_TO_MONTHS = { '1': 1, '2': 2, '3-4': 4, '6': 6 }
 
 const initializeLoans = () => {
   const stored = localStorage.getItem(STORAGE_KEY)
@@ -36,44 +39,117 @@ const generateLoanId = () => {
   return `LN-${String(lastNum + 1).padStart(6, '0')}`
 }
 
+function preferredDurationMonths(data) {
+  if (data.preferredDuration != null) return parseInt(data.preferredDuration, 10)
+  const tenor = data.preferredTenor
+  return tenor && TENOR_TO_MONTHS[tenor] != null ? TENOR_TO_MONTHS[tenor] : 6
+}
+
 export const loanService = {
   submitApplication: async (applicationData) => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         try {
-          if (
-            !applicationData.patientName ||
-            !applicationData.phone ||
-            !applicationData.email ||
-            !applicationData.hospital ||
-            !applicationData.treatmentCategory ||
-            !applicationData.estimatedCost
-          ) {
-            reject(new Error('All fields are required'))
+          const name = applicationData.fullName || applicationData.patientName
+          const phone = applicationData.phone
+          const requestedAmount = parseFloat(applicationData.requestedAmount || applicationData.estimatedCost)
+          if (!name || !phone || !applicationData.state || !applicationData.lga || !applicationData.city || !applicationData.homeAddress || !applicationData.preferredContact) {
+            reject(new Error('Applicant and location fields are required'))
+            return
+          }
+          if (!applicationData.treatmentCategory || !applicationData.healthDescription || !applicationData.urgency || !applicationData.hospitalPreference) {
+            reject(new Error('Treatment information is required'))
+            return
+          }
+          if (applicationData.hospitalPreference === 'have_hospital' && !(applicationData.hospitalName || '').trim()) {
+            reject(new Error('Hospital name is required when you have a hospital'))
+            return
+          }
+          if (!applicationData.employmentType || !(applicationData.monthlyIncome ?? applicationData.monthlyIncomeRange) || !requestedAmount || (!applicationData.preferredTenor && applicationData.preferredDuration == null) || !applicationData.repaymentMethod) {
+            reject(new Error('Financial information is required'))
+            return
+          }
+          if (applicationData.hasActiveLoans === true || applicationData.hasActiveLoans === 'yes') {
+            if (applicationData.activeLoansMonthlyRepayment == null || !(applicationData.lenderType || '').trim()) {
+              reject(new Error('Active loans details are required when you have active loans'))
+              return
+            }
+          }
+          if (applicationData.addGuarantor === true || applicationData.addGuarantor === 'yes') {
+            if (!(applicationData.guarantorName || '').trim() || !(applicationData.guarantorPhone || '').trim() || !(applicationData.guarantorRelationship || '').trim()) {
+              reject(new Error('Guarantor details are required when adding a guarantor'))
+              return
+            }
+          }
+          if (!applicationData.consentDataProcessing || !applicationData.consentTerms) {
+            reject(new Error('Consent is required'))
             return
           }
 
-          const loans = getLoans()
+          const preferredDuration = preferredDurationMonths(applicationData)
+          const payload = {
+            ...applicationData,
+            patientName: name,
+            estimatedCost: requestedAmount,
+            preferredDuration,
+          }
+          const risk = computeRiskScore(payload)
+
           const newLoan = {
             id: generateLoanId(),
-            patientName: applicationData.patientName,
+            patientName: name,
+            fullName: applicationData.fullName || name,
             phone: applicationData.phone,
-            email: applicationData.email,
-            hospital: applicationData.hospital,
+            email: applicationData.email || '',
+            state: applicationData.state,
+            lga: applicationData.lga,
+            city: applicationData.city,
+            homeAddress: applicationData.homeAddress,
+            landmark: applicationData.landmark || '',
+            gpsLat: applicationData.gpsLat,
+            gpsLng: applicationData.gpsLng,
+            preferredContact: applicationData.preferredContact,
             treatmentCategory: applicationData.treatmentCategory,
-            estimatedCost: parseFloat(applicationData.estimatedCost),
-            preferredDuration: parseInt(applicationData.preferredDuration),
-            employmentType: applicationData.employmentType || 'private',
+            procedureOrService: applicationData.procedureOrService || '',
+            healthDescription: applicationData.healthDescription,
+            urgency: applicationData.urgency,
+            hospitalPreference: applicationData.hospitalPreference,
+            hospitalName: applicationData.hospitalName || '',
+            hospitalAddress: applicationData.hospitalAddress || '',
+            hospital: applicationData.hospitalPreference === 'have_hospital' ? (applicationData.hospitalName || '') : 'Any partner near me',
+            employmentType: applicationData.employmentType,
+            employmentSector: applicationData.employmentSector || '',
             employerName: applicationData.employerName || '',
             jobTitle: applicationData.jobTitle || '',
+            monthlyIncome: applicationData.monthlyIncome,
+            monthlyIncomeRange: applicationData.monthlyIncomeRange,
+            monthlyExpenses: applicationData.monthlyExpenses,
+            requestedAmount,
+            estimatedCost: requestedAmount,
+            preferredTenor: applicationData.preferredTenor,
+            preferredDuration,
+            repaymentMethod: applicationData.repaymentMethod,
+            hasActiveLoans: applicationData.hasActiveLoans,
+            activeLoansMonthlyRepayment: applicationData.activeLoansMonthlyRepayment,
+            lenderType: applicationData.lenderType,
+            addGuarantor: applicationData.addGuarantor,
+            guarantorName: applicationData.guarantorName,
+            guarantorPhone: applicationData.guarantorPhone,
+            guarantorRelationship: applicationData.guarantorRelationship,
+            guarantorAddress: applicationData.guarantorAddress,
+            guarantorEmploymentType: applicationData.guarantorEmploymentType,
+            riskScore: risk.riskScore,
+            riskTier: risk.riskTier,
+            riskReasons: risk.riskReasons,
+            riskRecommendation: risk.riskRecommendation,
             status: 'pending',
             submittedAt: new Date().toISOString(),
             documents: applicationData.documents || {},
           }
 
+          const loans = getLoans()
           loans.push(newLoan)
           saveLoans(loans)
-
           resolve(newLoan)
         } catch (error) {
           reject(error)

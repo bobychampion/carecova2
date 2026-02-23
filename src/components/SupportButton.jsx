@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import SupportModal from './SupportModal'
+import { MessageCircle } from 'lucide-react'
 
 export default function SupportButton() {
   const [isOpen, setIsOpen] = useState(false)
@@ -20,7 +21,7 @@ export default function SupportButton() {
         onClick={() => setIsOpen(true)}
         aria-label="Need help?"
       >
-        <span className="support-button-icon">💬</span>
+        <span className="support-button-icon"><MessageCircle size={24} /></span>
         <span className="support-button-text">Need help?</span>
       </button>
       {isOpen && (

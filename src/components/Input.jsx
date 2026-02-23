@@ -59,12 +59,13 @@ export default function Input({
   }
 
   const displayError = error || localError
+  const isValid = hasBlurred && !displayError && props.value
 
   return (
     <label className={`input-group ${className}`}>
       {label && <span className="input-label">{label}</span>}
       <input
-        className={`input ${displayError ? 'input--error' : ''}`}
+        className={`input ${displayError ? 'input--error' : ''} ${isValid ? 'input--success' : ''}`}
         {...props}
         onBlur={handleBlur}
         onChange={handleChange}

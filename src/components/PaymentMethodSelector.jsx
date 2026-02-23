@@ -1,10 +1,12 @@
+import { CreditCard, Wallet, Landmark } from 'lucide-react'
+
 export default function PaymentMethodSelector({ selectedMethod, onSelect, methods = [] }) {
   const defaultMethods = [
     {
       id: 'wallet',
       name: 'Pay with Wallet',
       description: 'OPay, Palmpay, and other mobile wallets',
-      icon: '💳',
+      icon: <Wallet size={24} />,
       recommended: true,
       processingTime: 'Instant',
     },
@@ -12,7 +14,7 @@ export default function PaymentMethodSelector({ selectedMethod, onSelect, method
       id: 'bank-transfer',
       name: 'Bank Transfer',
       description: 'Direct bank transfer',
-      icon: '🏦',
+      icon: <Landmark size={24} />,
       recommended: false,
       processingTime: '1-2 business days',
     },
@@ -20,7 +22,7 @@ export default function PaymentMethodSelector({ selectedMethod, onSelect, method
       id: 'card',
       name: 'Card Payment',
       description: 'Debit or credit card',
-      icon: '💳',
+      icon: <CreditCard size={24} />,
       recommended: false,
       processingTime: 'Instant',
     },

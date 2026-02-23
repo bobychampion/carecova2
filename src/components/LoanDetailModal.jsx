@@ -62,12 +62,47 @@ export default function LoanDetailModal({ loan, onClose, onApprove, onReject, on
         </div>
 
         <div className="modal-body">
+          {(loan.riskTier != null || loan.riskScore != null) && (
+            <div className="loan-detail-section application-risk-block">
+              <h3>Application risk (from form)</h3>
+              <div className="risk-block-header">
+                {loan.riskTier != null && (
+                  <span className={`risk-tier-badge risk-tier-badge--${(loan.riskTier || '').toLowerCase()}`}>
+                    Tier {loan.riskTier}
+                  </span>
+                )}
+                {loan.riskScore != null && (
+                  <span className="risk-score-label">Score: {loan.riskScore}</span>
+                )}
+              </div>
+              {loan.riskReasons && loan.riskReasons.length > 0 && (
+                <div className="risk-reasons">
+                  <strong>Why this score?</strong>
+                  <ul>
+                    {loan.riskReasons.map((r, i) => <li key={i}>{r}</li>)}
+                  </ul>
+                </div>
+              )}
+              {loan.riskRecommendation && (
+                <div className="risk-recommendation">
+                  <strong>Recommended:</strong> {loan.riskRecommendation}
+                </div>
+              )}
+            </div>
+          )}
+          {(loan.riskTier == null && loan.riskScore == null) && (
+            <div className="loan-detail-section application-risk-block">
+              <h3>Application risk (from form)</h3>
+              <p className="risk-not-assessed">Not assessed</p>
+            </div>
+          )}
+
           <div className="loan-detail-section">
             <h3>Application Information</h3>
             <div className="detail-grid">
               <div>
                 <strong>Patient Name:</strong>
-                <p>{loan.patientName}</p>
+                <p>{loan.fullName || loan.patientName}</p>
               </div>
               <div>
                 <strong>Phone:</strong>
@@ -75,28 +110,86 @@ export default function LoanDetailModal({ loan, onClose, onApprove, onReject, on
               </div>
               <div>
                 <strong>Email:</strong>
-                <p>{loan.email}</p>
+                <p>{loan.email || '—'}</p>
               </div>
+              {(loan.state || loan.lga || loan.city || loan.homeAddress) && (
+                <>
+                  <div>
+                    <strong>State / LGA / City:</strong>
+                    <p>{[loan.state, loan.lga, loan.city].filter(Boolean).join(', ') || '—'}</p>
+                  </div>
+                  <div>
+                    <strong>Address:</strong>
+                    <p>{loan.homeAddress}</p>
+                  </div>
+                  {loan.preferredContact && (
+                    <div>
+                      <strong>Preferred contact:</strong>
+                      <p>{loan.preferredContact}</p>
+                    </div>
+                  )}
+                </>
+              )}
               <div>
                 <strong>Hospital:</strong>
-                <p>{loan.hospital}</p>
+                <p>{loan.hospital ?? (loan.hospitalPreference === 'have_hospital' ? (loan.hospitalName || '—') : 'Any partner near me')}</p>
               </div>
               <div>
                 <strong>Treatment Category:</strong>
                 <p>{loan.treatmentCategory}</p>
               </div>
+              {(loan.healthDescription || loan.urgency) && (
+                <>
+                  {loan.healthDescription && (
+                    <div>
+                      <strong>Health description:</strong>
+                      <p>{loan.healthDescription}</p>
+                    </div>
+                  )}
+                  {loan.urgency && (
+                    <div>
+                      <strong>Urgency:</strong>
+                      <p>{loan.urgency}</p>
+                    </div>
+                  )}
+                </>
+              )}
               <div>
-                <strong>Estimated Cost:</strong>
-                <p>₦{loan.estimatedCost.toLocaleString()}</p>
+                <strong>Estimated Cost / Requested:</strong>
+                <p>₦{(loan.estimatedCost ?? loan.requestedAmount) != null ? Number(loan.estimatedCost ?? loan.requestedAmount).toLocaleString() : '—'}</p>
               </div>
               <div>
                 <strong>Preferred Duration:</strong>
-                <p>{loan.preferredDuration} months</p>
+                <p>{loan.preferredDuration ?? loan.approvedDuration ?? 6} months</p>
               </div>
               <div>
-                <strong>Employment sector:</strong>
-                <p>{loan.employmentType === 'government' ? 'Government / public sector' : 'Private sector'}</p>
+                <strong>Employment:</strong>
+                <p>{loan.employmentType === 'government' ? 'Government / public sector' : loan.employmentType === 'private' ? 'Private sector' : (loan.employmentType || '—')}</p>
               </div>
+              {(loan.monthlyIncomeRange || loan.monthlyIncome) && (
+                <div>
+                  <strong>Income:</strong>
+                  <p>{loan.monthlyIncomeRange || loan.monthlyIncome}</p>
+                </div>
+              )}
+              {loan.repaymentMethod && (
+                <div>
+                  <strong>Repayment method:</strong>
+                  <p>{loan.repaymentMethod}</p>
+                </div>
+              )}
+              {(loan.hasActiveLoans === true || loan.hasActiveLoans === 'yes') && (
+                <div>
+                  <strong>Active loans:</strong>
+                  <p>₦{loan.activeLoansMonthlyRepayment} / {loan.lenderType}</p>
+                </div>
+              )}
+              {(loan.addGuarantor === true || loan.addGuarantor === 'yes') && (loan.guarantorName || loan.guarantorPhone) && (
+                <div>
+                  <strong>Guarantor:</strong>
+                  <p>{loan.guarantorName}{loan.guarantorPhone ? ` — ${loan.guarantorPhone}` : ''}{loan.guarantorRelationship ? ` (${loan.guarantorRelationship})` : ''}</p>
+                </div>
+              )}
               {(loan.employerName || loan.jobTitle) && (
                 <>
                   {loan.employerName && (
@@ -156,31 +249,38 @@ export default function LoanDetailModal({ loan, onClose, onApprove, onReject, on
             </div>
           )}
 
-          <div className="loan-detail-section">
-            <h3>Verification &amp; Risk</h3>
-            <p className="section-hint">Identity (Dojah), Credit (FirstCentral), Banking (Mono), Payroll (Remita).</p>
-            <div className="verification-grid">
-              <div className="verification-item">
-                <strong>Identity / KYC (Dojah):</strong>
-                <span className="verification-status">{loan.verificationStatus?.identity ?? 'Pending'}</span>
+          <div className="loan-detail-section verification-panel">
+            <details className="verification-details">
+              <summary className="verification-panel-toggle">
+                <span>Verification &amp; Risk</span>
+                <span className="verification-panel-chevron" aria-hidden>▼</span>
+              </summary>
+              <div className="verification-panel-body">
+                <p className="section-hint">Identity (Dojah), Credit (FirstCentral), Banking (Mono), Payroll (Remita).</p>
+                <div className="verification-grid">
+                  <div className="verification-item">
+                    <strong>Identity / KYC (Dojah):</strong>
+                    <span className="verification-status">{loan.verificationStatus?.identity ?? 'Pending'}</span>
+                  </div>
+                  <div className="verification-item">
+                    <strong>Credit (FirstCentral):</strong>
+                    <span className="verification-status">{loan.verificationStatus?.credit ?? 'Pending'}</span>
+                  </div>
+                  <div className="verification-item">
+                    <strong>Banking / Income (Mono):</strong>
+                    <span className="verification-status">{loan.verificationStatus?.banking ?? 'Pending'}</span>
+                  </div>
+                  <div className="verification-item">
+                    <strong>Payroll (Remita, if govt):</strong>
+                    <span className="verification-status">{loan.verificationStatus?.payroll ?? (loan.employmentType === 'government' ? 'Pending' : 'Not run')}</span>
+                  </div>
+                </div>
+                <div className={`risk-summary ${loan.riskScore != null ? 'risk-summary--highlight' : ''}`}>
+                  <div className="risk-score-value"><strong>Risk score:</strong> {loan.riskScore ?? '—'}</div>
+                  <div><strong>Recommendation:</strong> {loan.riskRecommendation ?? '—'}</div>
+                </div>
               </div>
-              <div className="verification-item">
-                <strong>Credit (FirstCentral):</strong>
-                <span className="verification-status">{loan.verificationStatus?.credit ?? 'Pending'}</span>
-              </div>
-              <div className="verification-item">
-                <strong>Banking / Income (Mono):</strong>
-                <span className="verification-status">{loan.verificationStatus?.banking ?? 'Pending'}</span>
-              </div>
-              <div className="verification-item">
-                <strong>Payroll (Remita, if govt):</strong>
-                <span className="verification-status">{loan.verificationStatus?.payroll ?? (loan.employmentType === 'government' ? 'Pending' : 'Not run')}</span>
-              </div>
-            </div>
-            <div className="risk-summary">
-              <div><strong>Risk score:</strong> {loan.riskScore ?? '—'}</div>
-              <div><strong>Recommendation:</strong> {loan.riskRecommendation ?? '—'}</div>
-            </div>
+            </details>
           </div>
 
           {loan.status === 'approved' && loan.approvedAmount && (

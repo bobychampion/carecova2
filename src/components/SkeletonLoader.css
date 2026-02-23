@@ -1,0 +1,76 @@
+/* SkeletonLoader.css */
+
+.skeleton {
+    background: var(--color-border);
+    background: linear-gradient(110deg,
+            var(--color-border) 8%,
+            var(--color-border-light) 18%,
+            var(--color-border) 33%);
+    background-size: 200% 100%;
+    animation: 1.5s shimmer linear infinite;
+    border-radius: var(--radius-sm);
+}
+
+.skeleton-text {
+    height: 1.2rem;
+    width: 100%;
+}
+
+.skeleton-title {
+    height: 1.5rem;
+    width: 60%;
+}
+
+.skeleton-avatar {
+    height: 64px;
+    width: 64px;
+    border-radius: var(--radius-full);
+}
+
+.skeleton-card {
+    background: var(--color-bg-elevated);
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+}
+
+.skeleton-button {
+    height: 48px;
+    width: 120px;
+    border-radius: var(--radius-md);
+}
+
+/* Utilities for sizing */
+.w-full {
+    width: 100%;
+}
+
+.w-3\/4 {
+    width: 75%;
+}
+
+.w-5\/6 {
+    width: 83.333333%;
+}
+
+.w-4\/6 {
+    width: 66.666667%;
+}
+
+.mb-2 {
+    margin-bottom: 0.5rem;
+}
+
+.mb-4 {
+    margin-bottom: 1rem;
+}
+
+.flex {
+    display: flex;
+}
+
+.gap-2 {
+    gap: 0.5rem;
+}

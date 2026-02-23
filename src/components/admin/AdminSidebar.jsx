@@ -1,0 +1,52 @@
+import { NavLink } from 'react-router-dom'
+
+import {
+    LayoutDashboard,
+    ClipboardList,
+    CreditCard,
+    DollarSign,
+    Settings,
+    FileText,
+    LogOut
+} from 'lucide-react';
+
+export default function AdminSidebar({ onLogout }) {
+    const navItems = [
+        { name: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard size={18} /> },
+        { name: 'Applications', path: '/admin/applications', icon: <ClipboardList size={18} /> },
+        { name: 'Active Loans', path: '/admin/loans', icon: <CreditCard size={18} /> },
+        { name: 'Repayments', path: '/admin/repayments', icon: <DollarSign size={18} /> },
+        { name: 'Rules & Config', path: '/admin/rules', icon: <Settings size={18} /> },
+        { name: 'Audit Logs', path: '/admin/audit', icon: <FileText size={18} /> },
+    ]
+
+    return (
+        <aside className="admin-sidebar">
+            <div className="admin-sidebar-header">
+                <div className="admin-logo">CareCova</div>
+            </div>
+
+            <nav className="admin-nav">
+                {navItems.map((item) => (
+                    <NavLink
+                        key={item.path}
+                        to={item.path}
+                        className={({ isActive }) =>
+                            `admin-nav-item ${isActive ? 'active' : ''}`
+                        }
+                    >
+                        <span className="admin-nav-icon">{item.icon}</span>
+                        <span className="admin-nav-text">{item.name}</span>
+                    </NavLink>
+                ))}
+            </nav>
+
+            <div className="admin-sidebar-footer">
+                <button className="admin-logout-btn" onClick={onLogout}>
+                    <span className="admin-nav-icon"><LogOut size={18} /></span>
+                    <span className="admin-nav-text">Sign Out</span>
+                </button>
+            </div>
+        </aside>
+    )
+}

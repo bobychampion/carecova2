@@ -26,7 +26,7 @@ export default function Home() {
     <>
       <Header />
       <main>
-        <section className="hero">
+        <section className="hero mesh-bg-hero">
           <div className="container hero-content">
             <div className="hero-copy-block">
               <p className="eyebrow">Healthcare Financing</p>
@@ -39,11 +39,11 @@ export default function Home() {
                 and pay back in flexible installments.
               </p>
               <div className="hero-actions">
-                <Link to="/eligibility">
-                  <Button variant="primary">Check Eligibility</Button>
-                </Link>
                 <Link to="/apply">
-                  <Button variant="secondary">Start Application</Button>
+                  <Button variant="primary">Apply for Treatment Loan</Button>
+                </Link>
+                <Link to="/eligibility">
+                  <Button variant="secondary">Check Eligibility</Button>
                 </Link>
                 <Link to="/resume">
                   <Button variant="ghost">Resume Application</Button>
@@ -53,8 +53,8 @@ export default function Home() {
                 </Link>
               </div>
               <div className="hero-badges">
-                <span>24-48 hr approvals</span>
-                <span>Partner clinics</span>
+                <span>24 hr average approval</span>
+                <span>Partner clinics nationwide</span>
                 <span>Transparent terms</span>
               </div>
             </div>
@@ -63,7 +63,7 @@ export default function Home() {
                 src={heroImage}
                 alt="Happy family"
               />
-              <div className="floating-card">
+              <div className="floating-card glass-card">
                 <p className="floating-title">Average approval</p>
                 <p className="floating-value">24 hrs</p>
                 <p className="floating-note">Across partner clinics</p>
@@ -100,22 +100,22 @@ export default function Home() {
               <p>Four easy steps to financing your elective medical treatment.</p>
             </div>
             <div className="steps-grid">
-              <article className="step-card">
+              <article className="step-card glass-card">
                 <span className="step-number">01</span>
                 <h3>Apply</h3>
                 <p>Securely upload your treatment estimate or hospital bill.</p>
               </article>
-              <article className="step-card">
+              <article className="step-card glass-card">
                 <span className="step-number">02</span>
                 <h3>Review</h3>
                 <p>Get a fast decision based on smart affordability checks.</p>
               </article>
-              <article className="step-card">
+              <article className="step-card glass-card">
                 <span className="step-number">03</span>
                 <h3>Treated</h3>
                 <p>Focus on your health while we settle the bill directly.</p>
               </article>
-              <article className="step-card">
+              <article className="step-card glass-card">
                 <span className="step-number">04</span>
                 <h3>Repay</h3>
                 <p>Split the cost into clear, interest-fair installments.</p>
@@ -159,7 +159,7 @@ export default function Home() {
           </section>
         )}
 
-        <section className="section section-accent">
+        <section className="section section-accent mesh-bg-primary">
           <div className="container">
             <div className="section-header center">
               <h2>Financing for Elective Procedures</h2>
@@ -170,19 +170,19 @@ export default function Home() {
               </p>
             </div>
             <div className="card-grid">
-              <article className="info-card">
+              <article className="info-card glass-card">
                 <h3>IVF & Fertility</h3>
                 <p>Realize your family dreams now, pay over time.</p>
               </article>
-              <article className="info-card">
+              <article className="info-card glass-card">
                 <h3>Dental & Optical</h3>
                 <p>Comprehensive care for eyes, teeth, and wellness.</p>
               </article>
-              <article className="info-card">
+              <article className="info-card glass-card">
                 <h3>Screenings & Wellness</h3>
                 <p>Preventive checks to stay ahead of health issues.</p>
               </article>
-              <article className="info-card">
+              <article className="info-card glass-card">
                 <h3>Cosmetic & Corrective</h3>
                 <p>Specialized surgeries and corrective procedures.</p>
               </article>
@@ -201,12 +201,11 @@ export default function Home() {
             <div>
               <h2>Ready to prioritize your health?</h2>
               <p>
-                Apply today and get approved in hours. Your health should not
-                have to wait for the next paycheck.
+                Apply for a treatment loan today and get a decision in as little as 24 hours. Your health should not have to wait for the next paycheck.
               </p>
             </div>
             <Link to="/apply">
-              <Button variant="light">Apply for Healthcare Financing</Button>
+              <Button variant="light">Apply for Treatment Loan</Button>
             </Link>
           </div>
         </section>

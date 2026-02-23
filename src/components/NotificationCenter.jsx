@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { notificationService } from '../services/notificationService'
+import {
+  CheckCircle,
+  Banknote,
+  Clock,
+  Megaphone,
+  Bell
+} from 'lucide-react'
 
 export default function NotificationCenter({ userId, onClose, onUnreadChange }) {
   const [notifications, setNotifications] = useState([])
@@ -44,13 +51,18 @@ export default function NotificationCenter({ userId, onClose, onUnreadChange }) 
   }
 
   const getNotificationIcon = (type) => {
-    const icons = {
-      approval: '✅',
-      payment: '💰',
-      reminder: '⏰',
-      policy: '📢',
+    switch (type) {
+      case 'approval':
+        return <CheckCircle size={20} className="text-success" />
+      case 'payment':
+        return <Banknote size={20} className="text-primary" />
+      case 'reminder':
+        return <Clock size={20} className="text-warning" />
+      case 'policy':
+        return <Megaphone size={20} className="text-info" />
+      default:
+        return <Bell size={20} className="text-muted" />
     }
-    return icons[type] || '🔔'
   }
 
   return (

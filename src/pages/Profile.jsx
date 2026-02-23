@@ -6,8 +6,24 @@ import Button from '../components/Button'
 import Input from '../components/Input'
 import Select from '../components/Select'
 import ProfileAccessModal from '../components/ProfileAccessModal'
+import SkeletonLoader from '../components/SkeletonLoader'
 import { profileService } from '../services/profileService'
 import { loanService } from '../services/loanService'
+import {
+  User,
+  ClipboardList,
+  Pencil,
+  Phone,
+  Mail,
+  Briefcase,
+  BarChart2,
+  Plus,
+  FileText,
+  CreditCard,
+  Building,
+  Coins,
+  Calendar
+} from 'lucide-react'
 
 export default function Profile() {
   const navigate = useNavigate()
@@ -47,9 +63,9 @@ export default function Profile() {
   useEffect(() => {
     const loadProfile = async () => {
       // Get user identifier from URL or localStorage
-      const userId = new URLSearchParams(window.location.search).get('userId') || 
-                     localStorage.getItem('carecova_user_id')
-      
+      const userId = new URLSearchParams(window.location.search).get('userId') ||
+        localStorage.getItem('carecova_user_id')
+
       if (!userId) {
         setLoading(false)
         setShowAccessModal(true)
@@ -102,15 +118,16 @@ export default function Profile() {
 
         {loading ? (
           <section className="section">
-            <div className="container">
-              <div className="loading">Loading profile...</div>
+            <div className="container" style={{ display: 'grid', gap: '2rem', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 2fr)' }}>
+              <SkeletonLoader type="card" count={1} />
+              <SkeletonLoader type="card" count={2} />
             </div>
           </section>
         ) : !profile ? (
           <section className="section">
             <div className="container">
               <div className="profile-empty-state">
-                <div className="profile-empty-icon">👤</div>
+                <div className="profile-empty-icon"><User size={48} /></div>
                 <h2>Welcome to Your Profile</h2>
                 <p>Enter your phone number or email to access your profile and view your loan history</p>
                 <Button variant="primary" onClick={() => setShowAccessModal(true)}>
@@ -125,7 +142,7 @@ export default function Profile() {
               <div className="container">
                 <div className="profile-hero-content">
                   <div className="profile-avatar">
-                    <span className="profile-avatar-icon">👤</span>
+                    <span className="profile-avatar-icon"><User size={48} /></span>
                   </div>
                   <div className="profile-hero-text">
                     <h1>My Profile</h1>
@@ -141,12 +158,12 @@ export default function Profile() {
                   <div className="profile-section profile-section--personal">
                     <div className="profile-section-header">
                       <div className="profile-section-title">
-                        <span className="profile-section-icon">📋</span>
+                        <span className="profile-section-icon"><ClipboardList size={24} /></span>
                         <h2>Personal Information</h2>
                       </div>
                       {!editing && (
                         <Button variant="ghost" onClick={() => setEditing(true)}>
-                          ✏️ Edit
+                          <Pencil size={16} className="mr-2" /> Edit
                         </Button>
                       )}
                     </div>
@@ -188,23 +205,23 @@ export default function Profile() {
                       </div>
                     ) : (
                       <div className="profile-info">
-                        <div className="profile-info-card">
-                          <div className="profile-info-icon">📞</div>
+                        <div className="profile-info-card glass-card">
+                          <div className="profile-info-icon"><Phone size={24} color="white" /></div>
                           <div className="profile-info-content">
                             <span className="profile-info-label">Phone Number</span>
                             <span className="profile-info-value">{profile.phone || 'Not provided'}</span>
                           </div>
                         </div>
-                        <div className="profile-info-card">
-                          <div className="profile-info-icon">✉️</div>
+                        <div className="profile-info-card glass-card">
+                          <div className="profile-info-icon"><Mail size={24} color="white" /></div>
                           <div className="profile-info-content">
                             <span className="profile-info-label">Email Address</span>
                             <span className="profile-info-value">{profile.email || 'Not provided'}</span>
                           </div>
                         </div>
                         {profile.employmentType && (
-                          <div className="profile-info-card">
-                            <div className="profile-info-icon">💼</div>
+                          <div className="profile-info-card glass-card">
+                            <div className="profile-info-icon"><Briefcase size={24} color="white" /></div>
                             <div className="profile-info-content">
                               <span className="profile-info-label">Employment Type</span>
                               <span className="profile-info-value">{profile.employmentType}</span>
@@ -218,7 +235,7 @@ export default function Profile() {
                   <div className="profile-section profile-section--loans">
                     <div className="profile-section-header">
                       <div className="profile-section-title">
-                        <span className="profile-section-icon">📊</span>
+                        <span className="profile-section-icon"><BarChart2 size={24} /></span>
                         <h2>Loan History</h2>
                         {loans.length > 0 && (
                           <span className="profile-section-badge">{loans.length}</span>
@@ -226,13 +243,13 @@ export default function Profile() {
                       </div>
                       {loans.length > 0 && (
                         <Button variant="primary" onClick={handleQuickApply}>
-                          ➕ Apply Again
+                          <Plus size={16} className="mr-2" /> Apply Again
                         </Button>
                       )}
                     </div>
                     {loans.length === 0 ? (
                       <div className="profile-empty-loans">
-                        <div className="profile-empty-loans-icon">📝</div>
+                        <div className="profile-empty-loans-icon"><FileText size={48} /></div>
                         <p>No loan applications yet.</p>
                         <Button variant="primary" onClick={() => navigate('/apply')}>
                           Start Your First Application
@@ -241,10 +258,10 @@ export default function Profile() {
                     ) : (
                       <div className="loan-history-list">
                         {loans.map((loan) => (
-                          <div key={loan.id} className="loan-history-card">
+                          <div key={loan.id} className="loan-history-card glass-card">
                             <div className="loan-history-card-header">
                               <div className="loan-history-id-section">
-                                <span className="loan-history-icon">💳</span>
+                                <span className="loan-history-icon"><CreditCard size={20} /></span>
                                 <span className="loan-history-id">{loan.id}</span>
                               </div>
                               <span className={`status-badge status-badge--${loan.status}`}>
@@ -253,17 +270,17 @@ export default function Profile() {
                             </div>
                             <div className="loan-history-card-body">
                               <div className="loan-history-detail-item">
-                                <span className="loan-history-detail-label">🏥 Hospital</span>
+                                <span className="loan-history-detail-label"><Building size={14} className="mr-1" /> Hospital</span>
                                 <span className="loan-history-detail-value">{loan.hospital}</span>
                               </div>
                               <div className="loan-history-detail-item">
-                                <span className="loan-history-detail-label">💰 Amount</span>
+                                <span className="loan-history-detail-label"><Coins size={14} className="mr-1" /> Amount</span>
                                 <span className="loan-history-detail-value loan-history-detail-value--amount">
                                   ₦{loan.estimatedCost?.toLocaleString() || 'N/A'}
                                 </span>
                               </div>
                               <div className="loan-history-detail-item">
-                                <span className="loan-history-detail-label">📅 Submitted</span>
+                                <span className="loan-history-detail-label"><Calendar size={14} className="mr-1" /> Submitted</span>
                                 <span className="loan-history-detail-value">
                                   {new Date(loan.submittedAt).toLocaleDateString()}
                                 </span>

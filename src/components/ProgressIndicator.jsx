@@ -2,6 +2,14 @@ export default function ProgressIndicator({ currentStep, totalSteps }) {
   const steps = Array.from({ length: totalSteps }, (_, i) => i + 1)
   const progress = ((currentStep - 1) / (totalSteps - 1)) * 100
 
+  const labels = [
+    'Applicant & Location',
+    'Treatment Info',
+    'Financial Info',
+    'Guarantor (Optional)',
+    'Review & Submit',
+  ]
+
   return (
     <div className="progress-indicator">
       <div className="progress-bar-container">
@@ -11,14 +19,13 @@ export default function ProgressIndicator({ currentStep, totalSteps }) {
         {steps.map((step) => (
           <div
             key={step}
-            className={`progress-step ${step <= currentStep ? 'active' : ''} ${step === currentStep ? 'current' : ''}`}
+            className={`progress-step ${step < currentStep ? 'active' : ''} ${step === currentStep ? 'current' : ''}`}
           >
-            <div className="progress-step-number">{step}</div>
+            <div className="progress-step-number">
+              {step < currentStep ? '✓' : step}
+            </div>
             <div className="progress-step-label">
-              {step === 1 && 'Personal Info'}
-              {step === 2 && 'Hospital & Treatment'}
-              {step === 3 && 'Financial Details'}
-              {step === 4 && 'Review'}
+              {labels[step - 1] || `Step ${step}`}
             </div>
           </div>
         ))}

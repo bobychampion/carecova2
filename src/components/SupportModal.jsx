@@ -1,3 +1,5 @@
+import { MessageCircle, Phone, Mail, X } from 'lucide-react'
+
 export default function SupportModal({ isOpen, onClose, context = {} }) {
   if (!isOpen) return null
 
@@ -15,7 +17,7 @@ export default function SupportModal({ isOpen, onClose, context = {} }) {
     <div className="support-modal-overlay" onClick={onClose}>
       <div className="support-modal" onClick={(e) => e.stopPropagation()}>
         <button className="support-modal-close" onClick={onClose}>
-          ×
+          <X size={24} />
         </button>
         <h2>How can we help you?</h2>
         <p className="support-modal-description">
@@ -29,7 +31,7 @@ export default function SupportModal({ isOpen, onClose, context = {} }) {
             rel="noopener noreferrer"
             className="support-option support-option--whatsapp"
           >
-            <div className="support-option-icon">💬</div>
+            <div className="support-option-icon"><MessageCircle size={24} /></div>
             <div className="support-option-content">
               <h3>WhatsApp</h3>
               <p>Chat with us instantly</p>
@@ -41,7 +43,7 @@ export default function SupportModal({ isOpen, onClose, context = {} }) {
             href={phoneUrl}
             className="support-option support-option--phone"
           >
-            <div className="support-option-icon">📞</div>
+            <div className="support-option-icon"><Phone size={24} /></div>
             <div className="support-option-content">
               <h3>Phone Call</h3>
               <p>+234 816 347 1359</p>
@@ -52,7 +54,7 @@ export default function SupportModal({ isOpen, onClose, context = {} }) {
             href={emailUrl}
             className="support-option support-option--email"
           >
-            <div className="support-option-icon">✉️</div>
+            <div className="support-option-icon"><Mail size={24} /></div>
             <div className="support-option-content">
               <h3>Email</h3>
               <p>support@carecova.com</p>
@@ -60,7 +62,7 @@ export default function SupportModal({ isOpen, onClose, context = {} }) {
           </a>
 
           <div className="support-option support-option--chat">
-            <div className="support-option-icon">💬</div>
+            <div className="support-option-icon"><MessageCircle size={24} /></div>
             <div className="support-option-content">
               <h3>Live Chat</h3>
               <p>Coming soon</p>

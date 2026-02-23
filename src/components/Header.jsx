@@ -6,9 +6,9 @@ import logo from '../assets/logo.png'
 
 export default function Header() {
   const [userId, setUserId] = useState(null)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
-    // Get user ID from localStorage if available
     const storedUserId = localStorage.getItem('carecova_user_id')
     if (storedUserId) {
       setUserId(storedUserId)
@@ -21,23 +21,36 @@ export default function Header() {
     }
   }, [])
 
+  const closeMenu = () => setMenuOpen(false)
+
   return (
-    <header className="site-header">
+    <header className="site-header glass-panel" style={{ position: 'sticky', top: 0, zIndex: 50 }}>
       <div className="container header-content">
-        <Link to="/" className="brand">
+        <Link to="/" className="brand" onClick={closeMenu}>
           <img src={logo} alt="CareCova" className="brand-logo" />
           <span className="brand-text">
             <span className="brand-mark">CareCova</span>
             <span className="brand-tagline">CareNow, Pay Later</span>
           </span>
         </Link>
-        <nav className="nav">
-          <Link to="/how-it-works">How It Works</Link>
-          <Link to="/calculator">Calculator</Link>
-          <Link to="/apply">Apply</Link>
-          <Link to="/track">Track</Link>
-          <Link to="/faq">FAQ</Link>
+
+        <button
+          className="mobile-menu-toggle"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={menuOpen}
+        >
+          {menuOpen ? '✕' : '☰'}
+        </button>
+
+        <nav className={`nav${menuOpen ? ' nav--open' : ''}`}>
+          <Link to="/how-it-works" onClick={closeMenu}>How It Works</Link>
+          <Link to="/calculator" onClick={closeMenu}>Calculator</Link>
+          <Link to="/apply" onClick={closeMenu}>Apply</Link>
+          <Link to="/track" onClick={closeMenu}>Track</Link>
+          <Link to="/faq" onClick={closeMenu}>FAQ</Link>
         </nav>
+
         <div className="header-actions">
           {userId && <NotificationBell userId={userId} />}
           <Link to="/profile">

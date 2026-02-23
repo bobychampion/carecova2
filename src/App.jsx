@@ -14,7 +14,14 @@ import PaymentConfirmation from './pages/PaymentConfirmation'
 import FAQ from './pages/FAQ'
 import Profile from './pages/Profile'
 import AdminLogin from './pages/AdminLogin'
-import AdminDashboard from './pages/AdminDashboard'
+import AdminLayout from './components/admin/AdminLayout'
+import Dashboard from './pages/admin/Dashboard'
+import Applications from './pages/admin/Applications'
+import ApplicationDetail from './pages/admin/ApplicationDetail'
+import ActiveLoans from './pages/admin/ActiveLoans'
+import Repayments from './pages/admin/Repayments'
+import RulesConfig from './pages/admin/RulesConfig'
+import AuditLog from './pages/admin/AuditLog'
 import { useAuth } from './hooks/useAuth'
 import './App.css'
 
@@ -47,14 +54,15 @@ function App() {
         <Route path="/faq" element={<FAQ />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/admin" element={<AdminLogin />} />
-        <Route
-          path="/admin/dashboard"
-          element={
-            <ProtectedRoute>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="applications" element={<Applications />} />
+          <Route path="applications/:id" element={<ApplicationDetail />} />
+          <Route path="loans" element={<ActiveLoans />} />
+          <Route path="repayments" element={<Repayments />} />
+          <Route path="rules" element={<RulesConfig />} />
+          <Route path="audit" element={<AuditLog />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   )

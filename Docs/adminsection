@@ -1,0 +1,382 @@
+
+
+## Admin Product Goals
+
+Your admin must do 5 things extremely well:
+
+1. **Triage fast** (what needs attention now?)
+2. **Understand risk quickly** (without reading a novel)
+3. **Verify completeness** (what’s missing?)
+4. **Make a decision** (approve/reject/offer/ask for more info)
+5. **Leave an audit trail** (who did what, when, and why)
+
+---
+
+## The Admin IA (Information Architecture)
+
+### A) Side Navigation (high piriopty other can be added)
+
+* **Dashboard**
+* **Applications**
+* **Decisions / Offers**
+* **Active Loans**
+* **Repayments**
+* **Hospitals/Providers**
+* **Rules & Config**
+* **Users**
+* **Audit Logs**
+* **Settings / Roles**
+
+If you want MVP lean, keep only:
+**Dashboard, Applications, Active Loans, Repayments, Rules & Config, Audit Logs**
+
+---
+
+## 1) Dashboard (Admin Home)
+
+### What it should show (CEO-level but actionable)
+
+**KPI Cards**
+
+* New Applications (Today / 7 days)
+* Pending Review (requires human action)
+* Awaiting Documents
+* Approved (not disbursed yet)
+* Active Loans
+* Overdue Payments (count + ₦ value)
+
+**Queues Preview**
+
+* “Needs Review Now” (top 10)
+* “High Risk” (top 10)
+* “Stuck for >48h” (top 10)
+
+**Operational Insights**
+
+* Average decision time
+* Approval rate
+* Common rejection reasons (top 5)
+
+**Why:** The dashboard tells the credit officer where to start *without thinking*.
+
+---
+
+## 2) Applications List (The Workbench)
+
+This is the core admin screen.
+
+### Table Columns (must-have)
+
+* Applicant Name
+* Sector: **Government / Private / Self-employed**
+* Requested Amount (₦)
+* Income (₦) (self-reported for now)
+* Estimated Expenses (₦) (self-reported for now)
+* **Affordability Score** (internal checker)
+* **Risk Badge** (Low / Medium / High) *(internal checker)*
+* Stage: Submitted / Incomplete / Under Review / Offer Sent / Approved / Rejected
+* Created date
+* Owner (which admin is handling)
+
+### Filters (high impact)
+
+* Sector (Gov/Private)
+* Risk level
+* Stage/status
+* Amount range
+* Tenor bucket
+* Date range
+* “Incomplete documents”
+* “Over 24/48 hours without action”
+
+### Search
+
+* Name, phone, email, application ID
+
+### Bulk actions (optional but powerful)
+
+* Assign to admin
+* Mark as “Need more info”
+* Export (CSV)
+
+---
+
+## 3) Application Detail View (Single Case File)
+
+This is where decisions happen. It must be structured like a **doctor’s chart** (ironically): summary first, details second.
+
+### Layout: 3-column structure
+
+**Left: Applicant Snapshot**
+**Middle: Verification & Risk**
+**Right: Decision Panel**
+
+---
+
+### 3.1 Applicant Snapshot (Left Column)
+
+**Identity Summary**
+
+* Full name
+* Phone / email
+* Address (basic)
+* Employment sector selector: Government / Private
+* Employer name
+* Job title
+* Salary frequency (monthly/weekly)
+* Monthly income (₦)
+* Monthly expenses (₦)
+* Dependents (optional)
+
+**Medical Loan Context**
+
+* Hospital/provider name
+* Treatment category (dropdown)
+* Severity (Low/Medium/High)
+* Treatment estimate (₦)
+* Requested amount (₦)
+* Reason/notes
+
+**Documents Box**
+
+* ID document (view/download)
+* NIN slip (view/download)
+* Payslip (if salary)
+* Treatment estimate/invoice
+* Any extra docs
+
+Each doc has:
+
+* Status: Uploaded / Missing / Needs clearer copy
+* Admin note
+
+---
+
+### 3.2 Verification & Risk (Middle Column)
+
+This section contains both:
+
+* **Internal checkers (no APIs)**
+* **External checkers (mock placeholders until backend)**
+
+#### A) Internal Checker Cards (No API needed)
+
+These should run instantly on the admin UI.
+
+1. **Sector & Repayment Route**
+
+* Sector: Government / Private
+* Repayment priority preview:
+
+  * Gov: Salary deduction → bank debit → card
+  * Private: Bank debit → card
+    *(This helps admin see what collection path applies.)*
+
+2. **Affordability Checker**
+   Compute simple ratios:
+
+* **Loan-to-income ratio** = requested_amount / monthly_income
+* **Expense coverage** = monthly_expenses / monthly_income
+* **Disposable income** = monthly_income - monthly_expenses
+* **Max recommended installment** rule of thumb (editable): e.g. 20–35% of income
+
+Show as:
+
+* Progress bars
+* A single summary tag: **Affordable / Tight / Not Affordable**
+
+3. **Risk Badge (Internal)**
+   Use internal thresholds (configurable):
+
+* **High Risk** if:
+
+  * expenses >= income (negative disposable)
+  * loan-to-income > X (e.g. > 3–5x monthly)
+  * requested amount above category cap
+  * documents missing
+* **Medium Risk** if near thresholds
+* **Low Risk** if comfortably within limits
+
+4. **Completeness Score**
+
+* % completion based on required fields + required documents
+  Show: 40% / 70% / 100% with missing list
+
+#### B) External Checker Panels (Mock now, real later)
+
+Collapsible sections:
+
+* Dojah KYC: `PENDING / PASSED / FAILED`
+* FirstCentral Credit: `PENDING / GOOD / BAD`
+* Mono Income: `PENDING / CONSISTENT / INCONSISTENT`
+* Remita Payroll: `PENDING / VERIFIED / NOT VERIFIED`
+
+For now, populate with:
+
+* “Not connected yet” or “Mocked value”
+* A “simulate result” dropdown (admin testing tool)
+
+**Key:** you can *simulate* integration outcomes now to validate UX and decision workflow.
+
+---
+
+### 3.3 Decision Panel (Right Column)
+
+This is the “controls” area. It should be sticky (always visible).
+
+**Recommendation Header**
+
+* System recommendation: Approve / Review / Reject *(based on internal checkers for now)*
+* Confidence: Low/Med/High
+* Top 3 reasons (auto-generated)
+
+**Actions**
+
+* ✅ Approve
+* ❌ Reject
+* 📝 Request More Info
+* ✍️ Modify Offer (counter-offer)
+
+**Offer Builder**
+
+* Approved amount (editable)
+* Tenor bucket selector (1–2, 2–3, 6–7 months)
+* Interest/fee (from config)
+* Downpayment (optional)
+* Repayment schedule preview
+* Hospital payout details
+
+**Decision Notes**
+
+* Required textarea: reason
+* Add internal tags:
+
+  * “High income but high expenses”
+  * “Missing payslip”
+  * “Treatment estimate too high”
+  * “Employer unclear”
+* Timestamp auto captured
+* Admin name auto captured
+
+---
+
+## 4) Risk Categories & Loan Categories (the thing you mentioned)
+
+You asked for “theft categories” and “loan categories.” I’m going to interpret that safely as:
+
+* **Risk categories** (fraud/affordability)
+* **Loan categories** (medical type + amount limits)
+
+### A) Loan Categories (Medical)
+
+Create admin-manageable categories:
+
+* Outpatient minor care
+* Diagnostics & tests
+* Surgery
+* Maternity
+* Emergency
+* Chronic management
+* Pharmacy/medication
+
+Each category has:
+
+* Max loan amount cap
+* Default tenor suggestion
+* Required documents list
+* Risk weighting (optional)
+
+### B) Risk Categories (Internal)
+
+Create “flags” that can appear automatically:
+
+* Affordability risk
+* Documentation risk
+* Employment clarity risk
+* Provider mismatch risk (estimate vs request)
+* Duplicate application risk (same phone/BVN later)
+* High amount request risk
+
+These flags should drive:
+
+* Risk badge color
+* Queue sorting (high-risk rises to top)
+* Decision recommendation
+
+---
+
+## 5) Rules & Config (Super Admin)
+
+This is where you keep your system flexible (you asked for editable interest etc.)
+
+**Editable Rules**
+
+* Interest/fees per tenor
+* Max loan-to-income ratio
+* Max expense ratio
+* Max amount per category
+* Required documents per sector
+* Risk badge thresholds
+* Default repayment method priority
+
+This is what prevents engineers from hardcoding business logic.
+
+---
+
+## 6) Repayments & Loans Admin (MVP)
+
+Even if collections is “soft reminders,” you still need clean visibility.
+
+**Active Loans list**
+
+* borrower, amount, disbursed date, next due date, status
+
+**Repayment schedule**
+
+* installment rows, paid/unpaid, attempts log
+
+**Reminder log**
+
+* when reminders were sent, by what channel
+
+---
+
+## 7) Mocking Strategy (so devs can build now)
+
+To build admin robustly before backend integrations:
+
+### Mock objects you should standardize
+
+* `application`
+* `documents`
+* `riskSummary`
+* `verificationSummary` (dojah/mono/remita/firstcentral)
+* `decisionHistory`
+
+### “Simulation controls” (dev-only toggle)
+
+* A dropdown to set:
+
+  * Dojah: pass/fail/pending
+  * FirstCentral: good/bad/pending
+  * Mono: consistent/inconsistent/pending
+  * Remita: verified/not/pending
+    This will help your team test every scenario fast.
+
+---
+
+## 8) The Admin UI style (your elegance requirement)
+
+Make admin feel “premium + clear”:
+
+* Card layout, soft shadows
+* Left navigation with icons
+* Consistent badges:
+
+  * Green = good/verified
+  * Amber = review/pending
+  * Red = high risk/fail
+* A lot of whitespace
+* A strong typography scale
+
+This is where shadcn/ui + Tailwind + TanStack Table shines (if you’re on React).

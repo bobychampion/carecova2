@@ -45,8 +45,8 @@ export default function Select({
         onBlur={handleBlur}
         onChange={handleChange}
       >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
+        {options.map((option, index) => (
+          <option key={option.value !== '' && option.value != null ? option.value : `opt-${index}`} value={option.value}>
             {option.label}
           </option>
         ))}

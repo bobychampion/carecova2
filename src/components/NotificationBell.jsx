@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import NotificationCenter from './NotificationCenter'
 import { notificationService } from '../services/notificationService'
+import { Bell } from 'lucide-react'
 
 export default function NotificationBell({ userId }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -29,7 +30,7 @@ export default function NotificationBell({ userId }) {
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Notifications"
       >
-        <span className="notification-bell-icon">🔔</span>
+        <span className="notification-bell-icon"><Bell size={20} /></span>
         {unreadCount > 0 && (
           <span className="notification-bell-badge">{unreadCount}</span>
         )}

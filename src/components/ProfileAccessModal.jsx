@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Button from './Button'
 import Input from './Input'
+import { User, X } from 'lucide-react'
 
 export default function ProfileAccessModal({ isOpen, onClose, onSubmit }) {
   const [userId, setUserId] = useState('')
@@ -24,10 +25,10 @@ export default function ProfileAccessModal({ isOpen, onClose, onSubmit }) {
     <div className="profile-access-modal-overlay" onClick={onClose}>
       <div className="profile-access-modal" onClick={(e) => e.stopPropagation()}>
         <button className="profile-access-modal-close" onClick={onClose}>
-          ×
+          <X size={24} />
         </button>
         <div className="profile-access-modal-content">
-          <div className="profile-access-modal-icon">👤</div>
+          <div className="profile-access-modal-icon"><User size={48} /></div>
           <h2>Access Your Profile</h2>
           <p className="profile-access-modal-description">
             Enter your phone number or email address to view your profile and loan history
