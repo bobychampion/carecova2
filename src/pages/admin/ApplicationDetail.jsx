@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { adminService } from '../../services/adminService'
-import { loanService } from '../../services/loanService'
 import { computeAffordability, computeRiskFlags } from '../../utils/affordabilityEngine'
 import StatusBadge from '../../components/StatusBadge'
 
@@ -20,14 +19,7 @@ export default function ApplicationDetail() {
         async function loadLoanDetails() {
             try {
                 setLoading(true)
-                // Find loan by ID
-                const allLoans = await loanService.getAllApplications()
-                const found = allLoans.find(l => l.id === id)
-
-                if (!found) {
-                    setError('Application not found')
-                    return
-                }
+                const found = await adminService.getLoanById(id)
 
                 // Compute on-the-fly checkers
                 const enriched = {

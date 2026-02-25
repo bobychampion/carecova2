@@ -63,7 +63,7 @@ export default function AdminLogin() {
           </Button>
         </form>
         <div className="login-note">
-          <p>Demo credentials: admin / admin123</p>
+          <p>Use your backend admin credentials</p>
         </div>
       </div>
     </div>

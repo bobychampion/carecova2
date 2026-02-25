@@ -3,61 +3,164 @@ import { trackingService } from './trackingService'
 import { auditService } from './auditService'
 
 const ADMIN_STORAGE_KEY = 'carecova_admin_session'
-const ADMIN_CREDENTIALS = {
-  username: 'admin',
-  password: 'admin123',
+const LOAN_STORAGE_KEY = 'carecova_loans'
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000').replace(/\/$/, '')
+const API_ROOT = `${API_BASE_URL}/api`
+
+const getStoredSession = () => {
+  try {
+    const stored = localStorage.getItem(ADMIN_STORAGE_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
+const normalizeLoan = (loan) => {
+  if (!loan) return loan
+  return {
+    ...loan,
+    id: loan.id || loan._id,
+    patientName: loan.patientName || loan.fullName,
+    hospital:
+      loan.hospital ||
+      loan.hospitalName ||
+      loan.hospitalDetails?.name ||
+      '—',
+    estimatedCost: loan.estimatedCost ?? loan.requestedAmount ?? 0,
+  }
+}
+
+const syncLoansToLocal = (loans) => {
+  try {
+    localStorage.setItem(LOAN_STORAGE_KEY, JSON.stringify(loans))
+  } catch (error) {
+    console.error('Error syncing loans to localStorage:', error)
+  }
+}
+
+const buildQuery = (params = {}) => {
+  const query = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
+      query.set(key, String(value))
+    }
+  })
+  const text = query.toString()
+  return text ? `?${text}` : ''
+}
+
+const adminRequest = async (path, options = {}) => {
+  const session = getStoredSession()
+  const token = session?.accessToken
+  if (!token) {
+    throw new Error('Admin session expired. Please sign in again.')
+  }
+
+  const response = await fetch(`${API_ROOT}${path}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      ...(options.headers || {}),
+    },
+    ...options,
+  })
+
+  const contentType = response.headers.get('content-type') || ''
+  const isJson = contentType.includes('application/json')
+  const body = isJson ? await response.json() : await response.text()
+
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      localStorage.removeItem(ADMIN_STORAGE_KEY)
+    }
+    const message =
+      (isJson && (Array.isArray(body?.message) ? body.message.join(', ') : body?.message)) ||
+      (typeof body === 'string' ? body : 'Request failed')
+    throw new Error(message)
+  }
+
+  return body
 }
 
 export const adminService = {
   login: async (username, password) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (
-          username === ADMIN_CREDENTIALS.username &&
-          password === ADMIN_CREDENTIALS.password
-        ) {
-          const session = {
-            username,
-            loggedIn: true,
-            loginTime: new Date().toISOString(),
-          }
-          localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(session))
-          auditService.record('login', { adminName: username })
-          resolve(session)
-        } else {
-          reject(new Error('Invalid credentials'))
-        }
-      }, 500)
-    })
+    try {
+      const response = await fetch(`${API_ROOT}/admins/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          usernameOrEmail: username,
+          password,
+        }),
+      })
+
+      const contentType = response.headers.get('content-type') || ''
+      const isJson = contentType.includes('application/json')
+      const body = isJson ? await response.json() : await response.text()
+
+      if (!response.ok) {
+        const message =
+          (isJson && (Array.isArray(body?.message) ? body.message.join(', ') : body?.message)) ||
+          (typeof body === 'string' ? body : 'Invalid credentials')
+        throw new Error(message)
+      }
+
+      const session = {
+        loggedIn: true,
+        loginTime: new Date().toISOString(),
+        accessToken: body.accessToken,
+        admin: body.admin,
+      }
+
+      localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(session))
+      auditService.record('login', { adminName: body.admin?.username || username })
+      return session
+    } catch (error) {
+      throw new Error(error.message || 'Invalid credentials')
+    }
   },
 
   logout: () => {
-    auditService.record('logout', { adminName: 'admin' })
+    const session = getStoredSession()
+    auditService.record('logout', { adminName: session?.admin?.username || 'admin' })
     localStorage.removeItem(ADMIN_STORAGE_KEY)
   },
 
   getSession: () => {
-    try {
-      const stored = localStorage.getItem(ADMIN_STORAGE_KEY)
-      if (!stored) return null
-      const session = JSON.parse(stored)
-      return session.loggedIn ? session : null
-    } catch {
-      return null
-    }
+    const session = getStoredSession()
+    if (!session || !session.loggedIn || !session.accessToken) return null
+    return session
   },
 
   isAuthenticated: () => {
     return adminService.getSession() !== null
   },
 
-  getAllLoans: async () => {
-    return loanService.getAllApplications()
+  getAllLoans: async (filters = {}) => {
+    const query = buildQuery(filters)
+    const loans = await adminRequest(`/admin/loan-applications${query}`)
+    const normalized = (loans || []).map(normalizeLoan)
+    syncLoansToLocal(normalized)
+    return normalized
+  },
+
+  getLoanById: async (loanId) => {
+    const loan = await adminRequest(`/admin/loan-applications/${loanId}`)
+    const normalized = normalizeLoan(loan)
+    const allLocal = await loanService.getAllApplications()
+    const index = allLocal.findIndex((item) => item.id === normalized.id)
+    if (index >= 0) allLocal[index] = { ...allLocal[index], ...normalized }
+    else allLocal.push(normalized)
+    syncLoansToLocal(allLocal)
+    return normalized
   },
 
   // Dashboard KPIs
   getKPIs: async () => {
-    const loans = await loanService.getAllApplications()
+    const loans = await adminService.getAllLoans()
     const now = new Date()
     const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000)
     const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000)
@@ -89,7 +192,7 @@ export const adminService = {
 
   // Dashboard queues
   getQueues: async () => {
-    const loans = await loanService.getAllApplications()
+    const loans = await adminService.getAllLoans()
     const now = new Date()
     const fortyEightHoursAgo = new Date(now - 48 * 60 * 60 * 1000)
 
@@ -113,7 +216,7 @@ export const adminService = {
 
   // Dashboard insights
   getInsights: async () => {
-    const loans = await loanService.getAllApplications()
+    const loans = await adminService.getAllLoans()
 
     // Average decision time (for decided loans)
     const decided = loans.filter(l => l.decidedAt && l.submittedAt)
