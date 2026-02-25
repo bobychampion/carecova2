@@ -37,8 +37,8 @@ export const trackingService = {
       // If loan is approved but doesn't have repayment schedule, calculate it
       if (loan.status === 'approved' && !loan.repaymentSchedule) {
         const repayment = calculateRepaymentSchedule(
-          loan.approvedAmount || loan.estimatedCost,
-          loan.preferredDuration || loan.approvedDuration
+          loan.approvedAmount || loan.estimatedCost || loan.requestedAmount,
+          loan.preferredDuration || loan.approvedDuration || 6
         )
         loan.repaymentSchedule = repayment.schedule
         loan.totalRepayment = repayment.totalAmount
