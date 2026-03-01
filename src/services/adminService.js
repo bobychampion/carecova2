@@ -6,6 +6,18 @@ const ADMIN_STORAGE_KEY = 'carecova_admin_session'
 const LOAN_STORAGE_KEY = 'carecova_loans'
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000').replace(/\/$/, '')
 const API_ROOT = `${API_BASE_URL}/api`
+const TOKEN_EXPIRY_SKEW_SECONDS = 30
+
+const authListeners = new Set()
+let refreshInFlight = null
+
+export class AuthSessionError extends Error {
+  constructor(message = 'Admin session expired. Please sign in again.') {
+    super(message)
+    this.name = 'AuthSessionError'
+    this.code = 'AUTH_SESSION_EXPIRED'
+  }
+}
 
 const getStoredSession = () => {
   try {
@@ -14,6 +26,129 @@ const getStoredSession = () => {
   } catch {
     return null
   }
+}
+
+const emitAuthEvent = (event) => {
+  authListeners.forEach((listener) => {
+    try {
+      listener(event)
+    } catch (error) {
+      console.error('Auth listener failed:', error)
+    }
+  })
+}
+
+const saveSession = (session) => {
+  localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(session))
+  emitAuthEvent({ type: 'session_updated', session })
+  return session
+}
+
+const clearSession = (reason = 'logged_out') => {
+  const previousSession = getStoredSession()
+  localStorage.removeItem(ADMIN_STORAGE_KEY)
+  emitAuthEvent({ type: reason, session: previousSession || null })
+}
+
+const parseJwtPayload = (token) => {
+  if (!token || typeof token !== 'string') return null
+  const parts = token.split('.')
+  if (parts.length < 2) return null
+
+  try {
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=')
+    const json = atob(padded)
+    return JSON.parse(json)
+  } catch {
+    return null
+  }
+}
+
+const isTokenExpired = (token) => {
+  const payload = parseJwtPayload(token)
+  if (!payload?.exp) return true
+  const expiresAtMs = payload.exp * 1000
+  const nowWithSkewMs = Date.now() + TOKEN_EXPIRY_SKEW_SECONDS * 1000
+  return expiresAtMs <= nowWithSkewMs
+}
+
+const parseResponseBody = async (response) => {
+  const contentType = response.headers.get('content-type') || ''
+  const isJson = contentType.includes('application/json')
+  const body = isJson ? await response.json() : await response.text()
+  return { isJson, body }
+}
+
+const getResponseMessage = (responseBody, isJson, fallback = 'Request failed') => {
+  return (
+    (isJson &&
+      (Array.isArray(responseBody?.message)
+        ? responseBody.message.join(', ')
+        : responseBody?.message)) ||
+    (typeof responseBody === 'string' ? responseBody : fallback)
+  )
+}
+
+const refreshSession = async () => {
+  if (refreshInFlight) {
+    return refreshInFlight
+  }
+
+  refreshInFlight = (async () => {
+    const session = getStoredSession()
+    if (!session?.refreshToken) {
+      clearSession('session_expired')
+      throw new AuthSessionError()
+    }
+
+    const response = await fetch(`${API_ROOT}/admins/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken: session.refreshToken }),
+    })
+
+    const { isJson, body } = await parseResponseBody(response)
+    if (!response.ok) {
+      const message = getResponseMessage(body, isJson, 'Session expired')
+      clearSession('session_expired')
+      throw new AuthSessionError(message)
+    }
+
+    const nextSession = saveSession({
+      ...session,
+      loggedIn: true,
+      accessToken: body.accessToken,
+      refreshToken: body.refreshToken,
+      admin: body.admin || session.admin,
+      loginTime: session.loginTime || new Date().toISOString(),
+    })
+
+    return nextSession
+  })()
+
+  try {
+    return await refreshInFlight
+  } finally {
+    refreshInFlight = null
+  }
+}
+
+const getValidAccessToken = async () => {
+  const session = getStoredSession()
+  if (!session?.accessToken) {
+    throw new AuthSessionError()
+  }
+
+  if (!isTokenExpired(session.accessToken)) {
+    return session.accessToken
+  }
+
+  const refreshed = await refreshSession()
+  if (!refreshed?.accessToken) {
+    throw new AuthSessionError()
+  }
+  return refreshed.accessToken
 }
 
 const normalizeLoan = (loan) => {
@@ -50,33 +185,37 @@ const buildQuery = (params = {}) => {
   return text ? `?${text}` : ''
 }
 
-const adminRequest = async (path, options = {}) => {
-  const session = getStoredSession()
-  const token = session?.accessToken
-  if (!token) {
-    throw new Error('Admin session expired. Please sign in again.')
-  }
-
+const adminRequest = async (path, options = {}, allowRefreshRetry = true) => {
+  const token = await getValidAccessToken()
   const response = await fetch(`${API_ROOT}${path}`, {
+    ...options,
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
       ...(options.headers || {}),
     },
-    ...options,
   })
 
-  const contentType = response.headers.get('content-type') || ''
-  const isJson = contentType.includes('application/json')
-  const body = isJson ? await response.json() : await response.text()
+  const { isJson, body } = await parseResponseBody(response)
 
   if (!response.ok) {
-    if (response.status === 401 || response.status === 403) {
-      localStorage.removeItem(ADMIN_STORAGE_KEY)
+    const message = getResponseMessage(body, isJson)
+    const unauthorized = response.status === 401 || response.status === 403
+
+    if (unauthorized && allowRefreshRetry) {
+      try {
+        await refreshSession()
+        return adminRequest(path, options, false)
+      } catch {
+        throw new AuthSessionError(message)
+      }
     }
-    const message =
-      (isJson && (Array.isArray(body?.message) ? body.message.join(', ') : body?.message)) ||
-      (typeof body === 'string' ? body : 'Request failed')
+
+    if (unauthorized) {
+      clearSession('session_expired')
+      throw new AuthSessionError(message)
+    }
+
     throw new Error(message)
   }
 
@@ -97,14 +236,10 @@ export const adminService = {
         }),
       })
 
-      const contentType = response.headers.get('content-type') || ''
-      const isJson = contentType.includes('application/json')
-      const body = isJson ? await response.json() : await response.text()
+      const { isJson, body } = await parseResponseBody(response)
 
       if (!response.ok) {
-        const message =
-          (isJson && (Array.isArray(body?.message) ? body.message.join(', ') : body?.message)) ||
-          (typeof body === 'string' ? body : 'Invalid credentials')
+        const message = getResponseMessage(body, isJson, 'Invalid credentials')
         throw new Error(message)
       }
 
@@ -112,10 +247,11 @@ export const adminService = {
         loggedIn: true,
         loginTime: new Date().toISOString(),
         accessToken: body.accessToken,
+        refreshToken: body.refreshToken,
         admin: body.admin,
       }
 
-      localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(session))
+      saveSession(session)
       auditService.record('login', { adminName: body.admin?.username || username })
       return session
     } catch (error) {
@@ -123,20 +259,62 @@ export const adminService = {
     }
   },
 
-  logout: () => {
+  logout: async () => {
     const session = getStoredSession()
     auditService.record('logout', { adminName: session?.admin?.username || 'admin' })
-    localStorage.removeItem(ADMIN_STORAGE_KEY)
+
+    try {
+      if (session?.accessToken) {
+        await fetch(`${API_ROOT}/admins/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.accessToken}`,
+          },
+          body: JSON.stringify({
+            refreshToken: session?.refreshToken,
+          }),
+        })
+      }
+    } catch (error) {
+      console.error('Logout request failed:', error)
+    } finally {
+      clearSession('logged_out')
+    }
   },
 
   getSession: () => {
     const session = getStoredSession()
-    if (!session || !session.loggedIn || !session.accessToken) return null
+    if (!session || !session.loggedIn || !session.accessToken || !session.refreshToken) {
+      return null
+    }
     return session
   },
 
   isAuthenticated: () => {
     return adminService.getSession() !== null
+  },
+
+  initializeSession: async () => {
+    const session = adminService.getSession()
+    if (!session) return null
+
+    if (!isTokenExpired(session.accessToken)) {
+      return session
+    }
+
+    try {
+      return await refreshSession()
+    } catch {
+      return null
+    }
+  },
+
+  refreshSession,
+
+  subscribeToAuthEvents: (listener) => {
+    authListeners.add(listener)
+    return () => authListeners.delete(listener)
   },
 
   getAllLoans: async (filters = {}) => {

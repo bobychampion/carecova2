@@ -23,6 +23,7 @@ import Repayments from './pages/admin/Repayments'
 import RulesConfig from './pages/admin/RulesConfig'
 import AuditLog from './pages/admin/AuditLog'
 import { useAuth } from './hooks/useAuth'
+import { AuthProvider } from './context/AuthContext'
 import './App.css'
 
 function ProtectedRoute({ children }) {
@@ -38,32 +39,41 @@ function ProtectedRoute({ children }) {
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/how-it-works" element={<HowItWorks />} />
-        <Route path="/partners" element={<Navigate to="/" replace />} />
-        <Route path="/apply" element={<Apply />} />
-        <Route path="/resume" element={<ResumeApplication />} />
-        <Route path="/eligibility" element={<EligibilityCheck />} />
-        <Route path="/track" element={<Track />} />
-        <Route path="/offer/:applicationId" element={<Offer />} />
-        <Route path="/calculator" element={<Calculator />} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/make-payment" element={<MakePayment />} />
-        <Route path="/payment-confirmation" element={<PaymentConfirmation />} />
-        <Route path="/faq" element={<FAQ />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/admin" element={<AdminLogin />} />
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="applications" element={<Applications />} />
-          <Route path="applications/:id" element={<ApplicationDetail />} />
-          <Route path="loans" element={<ActiveLoans />} />
-          <Route path="repayments" element={<Repayments />} />
-          <Route path="rules" element={<RulesConfig />} />
-          <Route path="audit" element={<AuditLog />} />
-        </Route>
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
+          <Route path="/partners" element={<Navigate to="/" replace />} />
+          <Route path="/apply" element={<Apply />} />
+          <Route path="/resume" element={<ResumeApplication />} />
+          <Route path="/eligibility" element={<EligibilityCheck />} />
+          <Route path="/track" element={<Track />} />
+          <Route path="/offer/:applicationId" element={<Offer />} />
+          <Route path="/calculator" element={<Calculator />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/make-payment" element={<MakePayment />} />
+          <Route path="/payment-confirmation" element={<PaymentConfirmation />} />
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/admin" element={<AdminLogin />} />
+          <Route
+            path="/admin/*"
+            element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="applications" element={<Applications />} />
+            <Route path="applications/:id" element={<ApplicationDetail />} />
+            <Route path="loans" element={<ActiveLoans />} />
+            <Route path="repayments" element={<Repayments />} />
+            <Route path="rules" element={<RulesConfig />} />
+            <Route path="audit" element={<AuditLog />} />
+          </Route>
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   )
 }
