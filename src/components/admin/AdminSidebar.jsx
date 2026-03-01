@@ -16,6 +16,7 @@ export default function AdminSidebar({ onLogout }) {
         { name: 'Applications', path: '/admin/applications', icon: <ClipboardList size={18} /> },
         { name: 'Active Loans', path: '/admin/loans', icon: <CreditCard size={18} /> },
         { name: 'Repayments', path: '/admin/repayments', icon: <DollarSign size={18} /> },
+        { name: 'Org Wallets', path: '/admin/wallets', icon: <DollarSign size={18} /> },
         { name: 'Rules & Config', path: '/admin/rules', icon: <Settings size={18} /> },
         { name: 'Audit Logs', path: '/admin/audit', icon: <FileText size={18} /> },
     ]

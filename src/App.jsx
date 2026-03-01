@@ -22,6 +22,7 @@ import ActiveLoans from './pages/admin/ActiveLoans'
 import Repayments from './pages/admin/Repayments'
 import RulesConfig from './pages/admin/RulesConfig'
 import AuditLog from './pages/admin/AuditLog'
+import OrganizationWallets from './pages/admin/OrganizationWallets'
 import { useAuth } from './hooks/useAuth'
 import { AuthProvider } from './context/AuthContext'
 import './App.css'
@@ -69,6 +70,7 @@ function App() {
             <Route path="applications/:id" element={<ApplicationDetail />} />
             <Route path="loans" element={<ActiveLoans />} />
             <Route path="repayments" element={<Repayments />} />
+            <Route path="wallets" element={<OrganizationWallets />} />
             <Route path="rules" element={<RulesConfig />} />
             <Route path="audit" element={<AuditLog />} />
           </Route>

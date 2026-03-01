@@ -317,6 +317,40 @@ export const adminService = {
     return () => authListeners.delete(listener)
   },
 
+  getWallets: async (filters = {}) => {
+    const query = buildQuery(filters)
+    return adminRequest(`/wallets${query}`)
+  },
+
+  getWalletOverview: async (filters = {}) => {
+    const query = buildQuery(filters)
+    return adminRequest(`/wallets/overview${query}`)
+  },
+
+  getWalletTransactions: async (filters = {}) => {
+    const query = buildQuery(filters)
+    return adminRequest(`/wallets/transactions${query}`)
+  },
+
+  getWalletStatement: async (walletId, filters = {}) => {
+    const query = buildQuery(filters)
+    return adminRequest(`/wallets/${walletId}/statement${query}`)
+  },
+
+  fundWallet: async (walletId, payload) => {
+    return adminRequest(`/wallets/${walletId}/fund`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  debitWallet: async (walletId, payload) => {
+    return adminRequest(`/wallets/${walletId}/debit`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+
   getAllLoans: async (filters = {}) => {
     const query = buildQuery(filters)
     const loans = await adminRequest(`/admin/loan-applications${query}`)
