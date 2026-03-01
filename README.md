@@ -15,5 +15,11 @@ View your app in AI Studio: https://ai.studio/apps/drive/1OJCckdG_Xl20tE-cUxLI6d
 
 1. Install dependencies:
    `npm install`
-2. Run the app:
+2. Create `.env` with:
+   `VITE_API_BASE_URL=http://localhost:3000`
+   `VITE_CLOUDINARY_CLOUD_NAME=dzfybnlw3`
+   `VITE_CLOUDINARY_UPLOAD_PRESET=Carecova`
+3. Run the app:
    `npm run dev`
+
+Note: do not put `Cloudinary API Secret` in frontend env. Keep it backend-only.
