@@ -2,6 +2,8 @@ import { loanService } from './loanService'
 import { trackingService } from './trackingService'
 import { auditService } from './auditService'
 import { getRiskConfig } from '../data/riskConfig'
+import { computeSchedule } from '../utils/lendingEngine'
+import * as commissionService from './commissionService'
 
 const ADMIN_STORAGE_KEY = 'carecova_admin_session'
 const USERS_STORAGE_KEY = 'carecova_admin_users'
@@ -156,17 +158,20 @@ export const adminService = {
     const failedDisbursements = loans.filter(l => l.disbursementIntent?.status === 'FAILED').length
 
     const config = getRiskConfig()
-    // Commission logic for sales
     let commissionEarned = 0
     let commissionPending = 0
+    let commissionLocked = 0
+    let commissionAvailable = 0
+    let commissionWithdrawn = 0
+    let commissionTotalEarned = 0
     if (session.role === 'sales') {
-      loans.forEach(l => {
-        if (['active', 'completed'].includes(l.status)) {
-          commissionEarned += (l.approvedAmount || 0) * config.salesCommissionPct
-        } else if (['approved', 'pending_disbursement', 'stage_2_review', 'pending_credit_review'].includes(l.status)) {
-          commissionPending += (l.requestedAmount || 0) * config.salesCommissionPct
-        }
-      })
+      const wallet = commissionService.getWalletAggregates(session.username)
+      commissionTotalEarned = wallet.totalEarned
+      commissionLocked = wallet.locked
+      commissionAvailable = wallet.available
+      commissionWithdrawn = wallet.withdrawn
+      commissionEarned = wallet.available + wallet.withdrawn
+      commissionPending = wallet.locked
     }
 
     // Overdue logic
@@ -185,6 +190,7 @@ export const adminService = {
     return {
       newToday, newWeek, pending: pendingReview, stage1Approved, disbursed,
       totalDisbursedAmount, commissionEarned, commissionPending,
+      commissionTotalEarned, commissionLocked, commissionAvailable, commissionWithdrawn,
       overdueCount, overdueValue, repaymentRate,
       newApplications, pendingReview, awaitingDocuments,
       readyToDisburse, activeLoansCount,
@@ -311,10 +317,7 @@ export const adminService = {
         const approvedAmount = terms.approvedAmount || loan.estimatedCost
         const duration = terms.duration || loan.preferredDuration
 
-        const repayment = trackingService.calculateRepaymentSchedule(
-          approvedAmount,
-          duration
-        )
+        const repayment = computeSchedule(approvedAmount, duration)
 
         loan.status = 'approved'
         const now = new Date().toISOString()
@@ -324,13 +327,18 @@ export const adminService = {
         loan.approvedDuration = duration
         loan.repaymentSchedule = repayment.schedule
         loan.totalRepayment = repayment.totalAmount
+        loan.totalInterest = repayment.totalInterest
         loan.monthlyInstallment = repayment.monthlyPayment
         loan.outstandingBalance = repayment.totalAmount
         loan.owner = session.username
         loan.decisionNotes = terms.notes || ''
         loan.decisionTags = terms.tags || []
+        if (terms.commissionOverrides) {
+          loan.commissionOverrides = { ...(loan.commissionOverrides || {}), ...terms.commissionOverrides }
+        }
 
         saveToStorage(loans)
+        commissionService.createApprovalCommission(loan)
 
         auditService.record('approve', {
           loanId,
@@ -399,13 +407,14 @@ export const adminService = {
 
         const approvedAmount = terms.approvedAmount ?? loan.approvedAmount
         const duration = terms.duration ?? loan.approvedDuration ?? loan.preferredDuration
-        const repayment = trackingService.calculateRepaymentSchedule(approvedAmount, duration)
+        const repayment = computeSchedule(approvedAmount, duration)
         const now = new Date().toISOString()
 
         loan.approvedAmount = approvedAmount
         loan.approvedDuration = duration
         loan.repaymentSchedule = repayment.schedule
         loan.totalRepayment = repayment.totalAmount
+        loan.totalInterest = repayment.totalInterest
         loan.monthlyInstallment = repayment.monthlyPayment
         loan.outstandingBalance = repayment.totalAmount
         loan.modifiedAt = now
@@ -607,8 +616,16 @@ export const adminService = {
         txs.unshift(newTx)
         saveTransactions(txs)
 
-        // Trigger Commission
-        adminService.triggerCommission(loan, amount)
+        const totalProjectedInterest = loan.totalInterest ?? (loan.totalRepayment || 0) - (loan.approvedAmount || 0)
+        commissionService.unlockInterestProportional(
+          loan,
+          amount,
+          (loan.totalPaid || 0) - (loan.approvedAmount || 0),
+          totalProjectedInterest
+        )
+        if (loan.status === 'completed') {
+          commissionService.unlockRepaymentBonus(loan)
+        }
 
         auditService.record('payment', {
           loanId,
@@ -623,28 +640,18 @@ export const adminService = {
     })
   },
 
-  triggerCommission: (loan, repaymentAmount) => {
-    const config = getRiskConfig()
-    if (!loan.assignedTo) return
-
-    // Simplistic commission accrual: 2.5% of repayment (mock logic)
-    const commissionAmount = repaymentAmount * (config.salesCommissionPct || 0.025)
-
-    // In a real app, we'd have a commission wallet per RM. 
-    // For now, we'll log it in the audit and potentially a dedicated storage if needed.
-    auditService.record('commission_accrual', {
-      loanId: loan.id,
-      adminName: 'system',
-      message: `Accrued ₦${commissionAmount.toLocaleString()} commission for ${loan.assignedTo}`
-    })
-  },
-
   getWalletBalance: () => {
     return getWallet().balance
   },
 
   getWalletTransactions: () => {
     return getTransactions()
+  },
+
+  withdrawMyCommission: async (amount) => {
+    const session = adminService.getSession()
+    if (!session) throw new Error('Not authenticated')
+    return commissionService.withdrawCommission(session.username, amount)
   },
 
   addRecoveryNote: async (loanId, note) => {
@@ -691,17 +698,21 @@ export const adminService = {
         if (loanIndex === -1) throw new Error('Loan not found')
 
         const loan = loans[loanIndex]
-
-        // Validate payout amount
-        if ((payoutData.payoutAmount || 0) > (loan.approvedAmount || Infinity)) {
-          throw new Error('Payout amount cannot exceed approved amount without an override')
-        }
+        const config = getRiskConfig()
+        const approvedAmount = loan.approvedAmount || 0
+        const providerCommissionPct = config.providerCommissionPct ?? 0.07
+        const providerPayout = Math.round(approvedAmount * (1 - providerCommissionPct))
+        const platformCommission = Math.round(approvedAmount * providerCommissionPct)
 
         const now = new Date().toISOString()
 
-        // Create disbursement intent record
         loan.disbursementIntent = {
           ...payoutData,
+          payoutAmount: providerPayout,
+          loanAmount: approvedAmount,
+          providerPayout,
+          platformCommission,
+          providerCommissionPct,
           status: 'PROCESSING',
           createdBy: session.username,
           updatedBy: session.username,
@@ -716,7 +727,7 @@ export const adminService = {
         auditService.record('disbursement_initiated', {
           loanId,
           adminName: session.name,
-          message: `Disbursement initiated via ${payoutData.payoutMethod} for ₦${payoutData.payoutAmount?.toLocaleString()}`,
+          message: `Disbursement initiated via ${payoutData.payoutMethod}: ₦${providerPayout.toLocaleString()} to provider (7% commission retained)`,
         })
 
         // Simulate async payout (3s delay)
@@ -729,6 +740,8 @@ export const adminService = {
             const freshLoan = freshLoans[idx]
 
             if (simulateResult === 'success') {
+              const payout = freshLoan.disbursementIntent.providerPayout ?? payoutData.payoutAmount ?? 0
+
               freshLoan.disbursementIntent.status = 'SUCCESS'
               freshLoan.disbursementIntent.providerReference = `REF-${Date.now()}`
               freshLoan.disbursementIntent.updatedAt = new Date().toISOString()
@@ -737,24 +750,24 @@ export const adminService = {
               freshLoan.disbursedBy = session.username
               freshLoan.totalPaid = 0
 
-              // Debit org wallet
               const wallet = getWallet()
-              wallet.balance -= (payoutData.payoutAmount || 0)
+              wallet.balance -= payout
               saveWallet(wallet)
 
-              // Log disbursement transaction
               const txs = getTransactions()
               txs.unshift({
                 id: `DIS-${Date.now()}`,
                 loanId,
                 applicantName: freshLoan.fullName || freshLoan.patientName,
-                amount: payoutData.payoutAmount || 0,
+                amount: payout,
                 date: new Date().toISOString(),
                 status: 'Successful',
                 method: payoutData.payoutMethod,
                 type: 'Disbursement',
               })
               saveTransactions(txs)
+
+              commissionService.createInterestCommission(freshLoan)
 
               auditService.record('disbursement_success', {
                 loanId,

@@ -1,33 +1,49 @@
 import { useState } from 'react'
 import MoneyInput from '../../MoneyInput'
 import { parseMoney } from '../../../utils/currencyUtils'
+import { computeSchedule } from '../../../utils/lendingEngine'
+import { getRiskConfig } from '../../../data/riskConfig'
 
 export default function DecisionPanel({ loan, session, onApprove, onReject, onRequestInfo }) {
     const [amount, setAmount] = useState(loan.approvedAmount || loan.requestedAmount || loan.estimatedCost || 0)
     const [tenor, setTenor] = useState(loan.duration || loan.preferredDuration || loan.preferredTenor?.replace(/[^0-9]/g, '').split('-')[1] || 6)
     const [notes, setNotes] = useState(loan.decisionNotes || '')
     const [actioning, setActioning] = useState(false)
-    const [activeTab, setActiveTab] = useState('decision') // decision | info
+    const [activeTab, setActiveTab] = useState('decision')
 
     const role = session?.role || 'admin'
     const status = loan.status
+    const config = getRiskConfig()
+    const parsedAmount = typeof amount === 'string' ? parseMoney(amount) || 0 : amount
+    const parsedTenor = Number(tenor) || 1
+    const rate = config.lendingInterestRatePerMonth ?? config.interestRate ?? 0.05
+    const scheduleResult = parsedAmount > 0 && parsedTenor >= 1 ? computeSchedule(parsedAmount, parsedTenor) : { totalAmount: 0, totalInterest: 0, monthlyPayment: 0 }
+    const totalRepayment = scheduleResult.totalAmount
+    const totalInterest = scheduleResult.totalInterest
+    const monthly = scheduleResult.monthlyPayment
 
-    // Handle string inputs from MoneyInput
-    const parsedAmount = typeof amount === 'string' ? parseMoney(amount) || 0 : amount;
-    const parsedTenor = Number(tenor) || 1;
+    const defaultApprovalPct = (config.salesApprovalCommissionPct ?? 0.02) * 100
+    const defaultInterestPct = (config.salesInterestCommissionPct ?? 0.07) * 100
+    const defaultBonusPct = (config.salesRepaymentBonusPct ?? 0.05) * 100
+    const [approvalPct, setApprovalPct] = useState((loan.commissionOverrides?.salesApprovalCommissionPct ?? config.salesApprovalCommissionPct ?? 0.02) * 100)
+    const [interestPct, setInterestPct] = useState((loan.commissionOverrides?.salesInterestCommissionPct ?? config.salesInterestCommissionPct ?? 0.07) * 100)
+    const [bonusPct, setBonusPct] = useState((loan.commissionOverrides?.salesRepaymentBonusPct ?? config.salesRepaymentBonusPct ?? 0.05) * 100)
 
-    // Use mock service fee (flat % for MVP) as discussed
-    const serviceFeePct = 0.05;
-    const serviceFeeAmount = parsedAmount * serviceFeePct;
-
-    const interestRate = 0.025; // per month
-    const totalRepayment = parsedAmount + serviceFeeAmount + (parsedAmount * interestRate * parsedTenor);
-    const monthly = totalRepayment / parsedTenor;
+    const approvalCommissionAmount = Math.round(parsedAmount * (approvalPct / 100))
+    const interestCommissionAmount = Math.round(totalInterest * (interestPct / 100))
+    const repaymentBonusAmount = Math.round(totalInterest * (bonusPct / 100))
 
     const handleApprove = async () => {
         if (!notes) return alert('Decision notes required')
         setActioning(true)
-        await onApprove({ approvedAmount: parsedAmount, duration: parsedTenor, notes, serviceFee: serviceFeeAmount, totalRepayable: totalRepayment })
+        await onApprove({
+            approvedAmount: parsedAmount,
+            duration: parsedTenor,
+            notes,
+            totalRepayable: totalRepayment,
+            totalInterest,
+            commissionOverrides: { salesApprovalCommissionPct: approvalPct / 100, salesInterestCommissionPct: interestPct / 100, salesRepaymentBonusPct: bonusPct / 100 },
+        })
         setActioning(false)
     }
 
@@ -129,10 +145,25 @@ export default function DecisionPanel({ loan, session, onApprove, onReject, onRe
                             </div>
                             <div className="offer-preview mt-4 bg-sage-light p-3 border-radius-sm text-sm" style={{ borderLeft: '3px solid #10b981' }}>
                                 <div className="flex-between mb-1"><span>Principal:</span><strong>₦{parsedAmount.toLocaleString()}</strong></div>
-                                <div className="flex-between mb-1"><span>Interest (2.5%):</span><strong>₦{(parsedAmount * 0.025 * parsedTenor).toLocaleString()}</strong></div>
+                                <div className="flex-between mb-1"><span>Interest ({(rate * 100).toFixed(0)}% monthly):</span><strong>₦{totalInterest.toLocaleString()}</strong></div>
+                                <div className="flex-between mb-1"><span>Total repayable:</span><strong>₦{totalRepayment.toLocaleString()}</strong></div>
                                 <div className="flex-between text-primary font-bold mt-2 pt-2 border-top">
                                     <span>Monthly:</span>
                                     <span>₦{monthly.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                                </div>
+                            </div>
+                            <div className="offer-preview mt-3 p-3 border-radius-sm text-sm" style={{ background: '#f9fafb', borderLeft: '3px solid #0ea5e9' }}>
+                                <div className="mb-2 font-semibold text-xs text-muted">Commission Impact (Sales)</div>
+                                <div className="flex-between mb-1"><span>Approval ({approvalPct.toFixed(1)}%)</span><strong>₦{approvalCommissionAmount.toLocaleString()}</strong></div>
+                                <div className="flex-between mb-1"><span>Interest ({interestPct.toFixed(1)}%)</span><strong>₦{interestCommissionAmount.toLocaleString()}</strong></div>
+                                <div className="flex-between mb-1"><span>Repayment bonus ({bonusPct.toFixed(1)}%)</span><strong>₦{repaymentBonusAmount.toLocaleString()}</strong></div>
+                                <div className="input-group mt-3">
+                                    <label className="input-label text-xs">Override % (Risk Officer)</label>
+                                    <div className="flex gap-2 text-xs">
+                                        <div style={{ flex: 1 }}><input type="number" className="input" value={approvalPct} onChange={e => setApprovalPct(Number(e.target.value) || 0)} placeholder="Approval %" /></div>
+                                        <div style={{ flex: 1 }}><input type="number" className="input" value={interestPct} onChange={e => setInterestPct(Number(e.target.value) || 0)} placeholder="Interest %" /></div>
+                                        <div style={{ flex: 1 }}><input type="number" className="input" value={bonusPct} onChange={e => setBonusPct(Number(e.target.value) || 0)} placeholder="Bonus %" /></div>
+                                    </div>
                                 </div>
                             </div>
                         </>

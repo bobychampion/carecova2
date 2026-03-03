@@ -49,30 +49,55 @@ export default function RulesConfig() {
                     <p className="text-sm text-muted mb-4">Payouts and revenue share parameters.</p>
 
                     <div className="input-group mb-4">
-                        <label className="input-label">Sales Commission (%)</label>
+                        <label className="input-label">Base Lending Interest (% per month)</label>
                         <input
                             type="number"
                             className="input"
-                            value={config.salesCommissionPct * 100}
-                            onChange={e => handleChange('salesCommissionPct', e.target.value / 100)}
+                            value={((config.lendingInterestRatePerMonth ?? config.interestRate) * 100)}
+                            onChange={e => {
+                                const v = Number(e.target.value) / 100
+                                setConfig(prev => ({ ...prev, lendingInterestRatePerMonth: v, interestRate: v }))
+                            }}
                         />
-                        <div className="text-xs text-muted mt-1">Percentage earned by Sales officers on successful loan disbursements.</div>
                     </div>
-
                     <div className="input-group mb-4">
-                        <label className="input-label">Base Interest Rate (%)</label>
+                        <label className="input-label">Provider Commission (%)</label>
                         <input
                             type="number"
                             className="input"
-                            value={config.interestRate * 100}
-                            onChange={e => handleChange('interestRate', e.target.value / 100)}
+                            value={((config.providerCommissionPct ?? 0.07) * 100)}
+                            onChange={e => handleChange('providerCommissionPct', e.target.value / 100)}
                         />
+                        <div className="text-xs text-muted mt-1">Retained by platform; provider receives remainder.</div>
+                    </div>
+                    <div className="input-group mb-2">
+                        <label className="input-label">Sales Approval Commission (%)</label>
+                        <input type="number" className="input" value={((config.salesApprovalCommissionPct ?? 0.02) * 100)} onChange={e => handleChange('salesApprovalCommissionPct', e.target.value / 100)} />
+                    </div>
+                    <div className="input-group mb-2">
+                        <label className="input-label">Sales Interest Commission (%)</label>
+                        <input type="number" className="input" value={((config.salesInterestCommissionPct ?? 0.07) * 100)} onChange={e => handleChange('salesInterestCommissionPct', e.target.value / 100)} />
+                    </div>
+                    <div className="input-group mb-4">
+                        <label className="input-label">Sales Repayment Bonus (%)</label>
+                        <input type="number" className="input" value={((config.salesRepaymentBonusPct ?? 0.05) * 100)} onChange={e => handleChange('salesRepaymentBonusPct', e.target.value / 100)} />
                     </div>
                 </div>
 
                 <div className="detail-card">
-                    <h2>Affordability & Risk Thresholds</h2>
-                    <p className="text-sm text-muted mb-4">These values directly impact the Affordability Checker tags and internal risk badges.</p>
+                    <h2>Lending & Affordability</h2>
+                    <p className="text-sm text-muted mb-4">Compounding and affordability thresholds.</p>
+                    <div className="input-group mb-4">
+                        <label className="input-label">Compounding on overdue</label>
+                        <div className="flex items-center gap-2">
+                            <input type="checkbox" checked={!!config.compoundingEnabled} onChange={e => setConfig(prev => ({ ...prev, compoundingEnabled: e.target.checked }))} />
+                            <span className="text-xs text-muted">Apply monthly compound after grace period</span>
+                        </div>
+                    </div>
+                    <div className="input-group mb-4">
+                        <label className="input-label">Grace Period (days)</label>
+                        <input type="number" className="input" value={config.gracePeriodDays ?? 0} onChange={e => handleChange('gracePeriodDays', e.target.value)} />
+                    </div>
 
                     <div className="input-group mb-4">
                         <label className="input-label">Max Installment to Income Ratio (%)</label>

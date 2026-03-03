@@ -33,8 +33,23 @@ export const DEFAULT_RISK_CONFIG = {
     tierBMax: 70,     // 36–70 = Tier B (Medium risk)
     // 71–100 = Tier C (High risk)
 
-    // Interest rate
-    interestRate: 0.025,   // per month
+    // Lending interest (company revenue)
+    interestRate: 0.05,                      // per month (5%)
+    lendingInterestRatePerMonth: 0.05,
+    compoundingEnabled: true,
+    gracePeriodDays: 0,
+    compoundMonthlyRate: 0.05,
+    partialPaymentReducesCompoundBase: true,
+
+    // Provider commission (hospital/clinic side)
+    providerCommissionPct: 0.07,
+
+    // Sales commission (two streams)
+    salesApprovalCommissionPct: 0.02,
+    salesInterestCommissionPct: 0.07,
+    salesRepaymentBonusPct: 0.05,
+    salesInterestUnlockRule: 'proportional',
+    salesCommissionPct: 0.02,
 
     // Repayment method priority by sector
     repaymentPriority: {

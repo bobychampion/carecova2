@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { adminService } from '../../services/adminService'
 import { loanService } from '../../services/loanService'
 import StatusBadge from '../../components/StatusBadge'
+import { getRiskConfig } from '../../data/riskConfig'
 import {
     CheckCircle, AlertTriangle, XCircle, ArrowLeft, Loader, Beaker
 } from 'lucide-react'
@@ -43,13 +44,14 @@ export default function DisbursementCaseFile() {
             const found = all.find(l => l.id === id)
             if (found) {
                 setLoan(found)
+                const config = getRiskConfig()
+                const providerPct = config.providerCommissionPct ?? 0.07
+                const approved = found.approvedAmount || 0
+                const providerPayout = Math.round(approved * (1 - providerPct))
                 if (found.disbursementIntent) {
                     setPayout(prev => ({ ...prev, ...found.disbursementIntent }))
                 } else {
-                    setPayout(prev => ({
-                        ...prev,
-                        payoutAmount: found.approvedAmount || '',
-                    }))
+                    setPayout(prev => ({ ...prev, payoutAmount: providerPayout }))
                 }
             }
             setLoading(false)
@@ -61,6 +63,11 @@ export default function DisbursementCaseFile() {
         setPayout(prev => ({ ...prev, [field]: value }))
     }
 
+    const config = getRiskConfig()
+    const providerPct = config.providerCommissionPct ?? 0.07
+    const approvedAmount = loan ? (loan.approvedAmount || 0) : 0
+    const providerPayoutComputed = Math.round(approvedAmount * (1 - providerPct))
+    const platformCommissionAmount = Math.round(approvedAmount * providerPct)
     const amount = Number(payout.payoutAmount)
 
     const validationErrors = {
@@ -68,7 +75,7 @@ export default function DisbursementCaseFile() {
         hospitalAccountName: !payout.hospitalAccountName.trim() ? 'Account name is required' : null,
         hospitalBankName: !payout.hospitalBankName ? 'Select a bank' : null,
         hospitalAccountNumber: String(payout.hospitalAccountNumber).length < 10 ? `Account number must be 10 digits (${String(payout.hospitalAccountNumber).length}/10)` : null,
-        payoutAmount: amount <= 0 ? 'Enter a payout amount greater than 0' : amount > (loan?.approvedAmount || Infinity) ? 'Amount exceeds approved limit' : null,
+        payoutAmount: amount <= 0 ? 'Enter a payout amount greater than 0' : null,
     }
 
     const isFormValid = () => Object.values(validationErrors).every(e => e === null)
@@ -287,13 +294,17 @@ export default function DisbursementCaseFile() {
                         </div>
 
                         <div className="form-group">
-                            <label className="form-label">Payout Amount (₦) *</label>
-                            <input type="number" className="input" value={payout.payoutAmount} disabled={isDone}
-                                onChange={e => handlePayoutChange('payoutAmount', Number(e.target.value))}
-                                max={loan.approvedAmount}
-                                style={validationErrors.payoutAmount ? { borderColor: '#ef4444' } : {}}
-                            />
-                            {validationErrors.payoutAmount && <p style={{ color: '#ef4444', fontSize: '0.72rem', marginTop: 3 }}>⚠ {validationErrors.payoutAmount}</p>}
+                            <label className="form-label">Payout breakdown</label>
+                            <div className="p-3 rounded-lg border border-gray-200 bg-gray-50 text-sm">
+                                <div className="flex justify-between"><span>Approved (loan amount)</span><span className="font-medium">₦{approvedAmount.toLocaleString()}</span></div>
+                                <div className="flex justify-between"><span>Provider commission ({(providerPct * 100).toFixed(0)}%)</span><span className="font-medium">− ₦{platformCommissionAmount.toLocaleString()}</span></div>
+                                <div className="flex justify-between pt-2 border-t border-gray-200 font-bold"><span>Amount to provider</span><span>₦{providerPayoutComputed.toLocaleString()}</span></div>
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Payout Amount (₦) — to provider</label>
+                            <input type="number" className="input" value={payout.payoutAmount} readOnly style={{ backgroundColor: '#f1f5f9', cursor: 'not-allowed' }} />
+                            <p className="text-xs text-muted mt-1">Computed from approved amount minus provider commission.</p>
                         </div>
 
                         <div className="form-group">

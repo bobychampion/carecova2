@@ -22,15 +22,15 @@ export default function SalesDashboardView({ kpis, queues }) {
                 </div>
                 <div className="admin-kpi-card info">
                     <div className="kpi-icon"><TrendingUp size={24} /></div>
-                    <div className="kpi-title">Commission Earned</div>
-                    <div className="kpi-value">₦{kpis.commissionEarned.toLocaleString()}</div>
-                    <div className="kpi-subtext">Click to view breakdown</div>
+                    <div className="kpi-title">Available Commission</div>
+                    <div className="kpi-value">₦{(kpis.commissionAvailable ?? kpis.commissionEarned ?? 0).toLocaleString()}</div>
+                    <div className="kpi-subtext">Withdrawable today</div>
                 </div>
                 <div className="admin-kpi-card warning">
                     <div className="kpi-icon"><Clock size={24} /></div>
-                    <div className="kpi-title">Commission Pending</div>
-                    <div className="kpi-value">₦{kpis.commissionPending.toLocaleString()}</div>
-                    <div className="kpi-subtext">On pending approvals</div>
+                    <div className="kpi-title">Locked Commission</div>
+                    <div className="kpi-value">₦{(kpis.commissionLocked ?? kpis.commissionPending ?? 0).toLocaleString()}</div>
+                    <div className="kpi-subtext">Pending disbursement & repayments</div>
                 </div>
             </section>
 
@@ -74,19 +74,23 @@ export default function SalesDashboardView({ kpis, queues }) {
                         </div>
 
                         <div className="insight-card mt-4">
-                            <h3>Commission History</h3>
+                            <h3>Commission Wallet</h3>
                             <div className="text-sm">
                                 <div className="flex-between py-1 border-bottom">
-                                    <span>Locked (Disbursed)</span>
-                                    <strong className="text-success">₦{kpis.commissionEarned.toLocaleString()}</strong>
+                                    <span>Total Earned (all time)</span>
+                                    <strong>₦{(kpis.commissionTotalEarned ?? 0).toLocaleString()}</strong>
                                 </div>
                                 <div className="flex-between py-1 border-bottom">
-                                    <span>In Review</span>
-                                    <strong className="text-warning">₦{65000?.toLocaleString()}</strong>
+                                    <span>Locked</span>
+                                    <strong className="text-warning">₦{(kpis.commissionLocked ?? 0).toLocaleString()}</strong>
                                 </div>
                                 <div className="flex-between py-1 border-bottom">
-                                    <span>Last Payout</span>
-                                    <span className="text-muted">Feb 15, 2026</span>
+                                    <span>Available</span>
+                                    <strong>₦{(kpis.commissionAvailable ?? 0).toLocaleString()}</strong>
+                                </div>
+                                <div className="flex-between py-1 border-bottom">
+                                    <span>Withdrawn</span>
+                                    <strong>₦{(kpis.commissionWithdrawn ?? 0).toLocaleString()}</strong>
                                 </div>
                             </div>
                             <button className="button button--ghost w-full mt-3 text-xs">View Full Ledger</button>

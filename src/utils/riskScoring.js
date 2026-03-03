@@ -4,10 +4,12 @@
  * Returns: riskScore (0-100), riskTier (A/B/C), riskReasons, riskRecommendation.
  */
 
-const INTEREST_RATE = 0.025
+import { getRiskConfig } from '../data/riskConfig'
 
 function getMonthlyRepayment(requestedAmount, tenorMonths) {
-  const total = requestedAmount * (1 + INTEREST_RATE * tenorMonths)
+  const config = getRiskConfig()
+  const rate = config.lendingInterestRatePerMonth ?? config.interestRate ?? 0.05
+  const total = requestedAmount * (1 + rate * tenorMonths)
   return total / tenorMonths
 }
 

@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import Button from '../components/Button'
+import { getRiskConfig } from '../data/riskConfig'
 
 export default function Calculator() {
   const [amount, setAmount] = useState(250000)
   const [months, setMonths] = useState(6)
 
-  // Interest calculation matching the service logic
-  const interestRate = 0.025 // 2.5% monthly
+  const config = getRiskConfig()
+  const interestRate = config.lendingInterestRatePerMonth ?? config.interestRate ?? 0.05
   const totalRepayment = amount * (1 + interestRate * months)
   const monthlyInstallment = totalRepayment / months
   const totalInterest = totalRepayment - amount

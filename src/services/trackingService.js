@@ -1,34 +1,11 @@
 import { loanService } from './loanService'
+import { computeSchedule, applyCompounding } from '../utils/lendingEngine'
 
 const DISBURSE_ELIGIBLE = ['approved', 'pending_disbursement', 'disbursement_processing', 'active', 'overdue', 'completed']
 
-const calculateRepaymentSchedule = (loanAmount, duration, interestRate = 0.025) => {
-  const monthlyInterest = interestRate
-  const totalAmount = loanAmount * (1 + monthlyInterest * duration)
-  const monthlyPayment = totalAmount / duration
-
-  const schedule = []
-  let remainingBalance = totalAmount
-
-  for (let i = 1; i <= duration; i++) {
-    const dueDate = new Date()
-    dueDate.setMonth(dueDate.getMonth() + i)
-    const payment = i === duration ? remainingBalance : monthlyPayment
-    remainingBalance -= payment
-
-    schedule.push({
-      month: i,
-      amount: Math.round(payment),
-      dueDate: dueDate.toISOString().split('T')[0],
-      paid: false,
-    })
-  }
-
-  return {
-    schedule,
-    totalAmount: Math.round(totalAmount),
-    monthlyPayment: Math.round(monthlyPayment),
-  }
+function calculateRepaymentSchedule(loanAmount, duration, interestRate) {
+  const result = computeSchedule(loanAmount, duration, interestRate != null ? { interestRate, lendingInterestRatePerMonth: interestRate } : undefined)
+  return { schedule: result.schedule, totalAmount: result.totalAmount, monthlyPayment: result.monthlyPayment }
 }
 
 // Human-readable labels for status badges in tracking/email
@@ -57,12 +34,13 @@ export const trackingService = {
 
       // Generate repayment schedule for any post-approval status that doesn't have one
       if (DISBURSE_ELIGIBLE.includes(loan.status) && !loan.repaymentSchedule) {
-        const repayment = calculateRepaymentSchedule(
+        const repayment = computeSchedule(
           loan.approvedAmount || loan.estimatedCost,
           loan.approvedDuration || loan.preferredDuration
         )
         loan.repaymentSchedule = repayment.schedule
         loan.totalRepayment = repayment.totalAmount
+        loan.totalInterest = repayment.totalInterest
         loan.monthlyInstallment = repayment.monthlyPayment
       }
 
@@ -71,13 +49,14 @@ export const trackingService = {
         const now = new Date()
         const paidAmount = loan.repaymentSchedule
           .filter((p) => p.paid)
-          .reduce((sum, p) => sum + p.amount, 0)
+          .reduce((sum, p) => sum + (p.paidAmount ?? p.amount), 0)
         const totalAmount = loan.repaymentSchedule.reduce(
           (sum, p) => sum + p.amount,
           0
         )
         loan.outstandingBalance = totalAmount - paidAmount
         loan.totalPaid = paidAmount
+        applyCompounding(loan, now)
 
         // Calculate DPD (Days Past Due) — only meaningful once loan is active
         let maxDpd = 0
@@ -129,4 +108,5 @@ export const trackingService = {
   },
 
   calculateRepaymentSchedule,
+  computeSchedule,
 }
