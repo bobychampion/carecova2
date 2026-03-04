@@ -5420,6 +5420,47 @@
   padding: 0.75rem 1rem;
 }
 
+.essential-wallets-section {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0.9rem;
+}
+
+.essential-wallets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.7rem;
+}
+
+.essential-wallet-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.75rem;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.essential-wallet-title {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.essential-wallet-balance {
+  font-size: 1.12rem;
+  font-weight: 700;
+  color: #0f766e;
+}
+
+.essential-wallet-helper {
+  font-size: 0.78rem;
+  color: #4b5563;
+  min-height: 2rem;
+}
+
 .wallets-filter-panel {
   background: #ffffff;
   border: 1px solid #e5e7eb;
@@ -5552,5 +5593,229 @@
 @media (max-width: 1100px) {
   .wallets-layout-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+.mono-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1200;
+}
+
+.mono-modal {
+  width: min(1100px, 100%);
+  max-height: 92vh;
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  padding: 1rem 1rem 1.2rem;
+}
+
+.mono-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.mono-modal-title {
+  margin: 0;
+}
+
+.mono-modal-subtitle {
+  margin: 0.25rem 0 0;
+  font-size: 0.88rem;
+  color: #475569;
+}
+
+.mono-modal-form {
+  margin-top: 0.9rem;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.65rem;
+  align-items: end;
+}
+
+.mono-modal-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  color: #334155;
+}
+
+.mono-modal-form input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.48rem 0.6rem;
+  font-size: 0.9rem;
+}
+
+.mono-checkbox {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.45rem !important;
+  margin-bottom: 0.35rem;
+}
+
+.mono-modal-content {
+  margin-top: 1rem;
+}
+
+.mono-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.mono-summary-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 0.65rem;
+}
+
+.mono-summary-label {
+  font-size: 0.75rem;
+  color: #475569;
+}
+
+.mono-summary-value {
+  margin-top: 0.2rem;
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.mono-insights {
+  margin-top: 0.9rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.75rem;
+  background: #f8fafc;
+}
+
+.mono-insights h3 {
+  margin: 0 0 0.45rem;
+  font-size: 0.9rem;
+}
+
+.mono-insights ul {
+  margin: 0;
+  padding-left: 1rem;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.mono-warnings {
+  margin-top: 0.7rem;
+}
+
+.mono-sections {
+  margin-top: 0.9rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.mono-section-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.7rem;
+  background: #ffffff;
+}
+
+.mono-section-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.mono-section-title {
+  font-weight: 700;
+}
+
+.mono-section-endpoint {
+  margin-top: 0.2rem;
+  font-size: 0.76rem;
+  color: #64748b;
+  word-break: break-all;
+}
+
+.mono-section-badge {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.16rem 0.5rem;
+  text-transform: capitalize;
+  font-size: 0.74rem;
+  font-weight: 600;
+  height: fit-content;
+}
+
+.mono-section-error {
+  margin-top: 0.6rem;
+  color: #b91c1c;
+  font-size: 0.82rem;
+}
+
+.mono-section-message {
+  margin-top: 0.6rem;
+  color: #475569;
+  font-size: 0.82rem;
+}
+
+.mono-section-card details {
+  margin-top: 0.6rem;
+}
+
+.mono-section-card summary {
+  cursor: pointer;
+  color: #2563eb;
+  font-size: 0.82rem;
+}
+
+.mono-section-card pre {
+  margin: 0.45rem 0 0;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 0.55rem;
+  max-height: 260px;
+  overflow: auto;
+  font-size: 0.74rem;
+}
+
+@media (max-width: 1080px) {
+  .mono-modal-form {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mono-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mono-sections {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .mono-modal {
+    padding: 0.8rem;
+  }
+
+  .mono-modal-form {
+    grid-template-columns: 1fr;
+  }
+
+  .mono-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

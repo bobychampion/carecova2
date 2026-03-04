@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react'
+import MonoConnectionCard from './MonoConnectionCard'
 
-export default function VerificationRisk({ loan }) {
+export default function VerificationRisk({
+    loan,
+    onInitiateMonoConnect,
+    onRefreshMonoStatus,
+    onOpenInformedDecision,
+    monoInitiating = false,
+    monoRefreshing = false,
+    monoFeedbackMessage = '',
+    monoFeedbackError = '',
+}) {
     // Add feature flag for Mock/Simulation mode
     const [isDevMode, setIsDevMode] = useState(true);
 
@@ -38,6 +48,17 @@ export default function VerificationRisk({ loan }) {
 
     return (
         <div className="detail-column column-verification bg-sage-light">
+            <MonoConnectionCard
+                loan={loan}
+                initiating={monoInitiating}
+                refreshing={monoRefreshing}
+                onInitiate={onInitiateMonoConnect}
+                onRefresh={onRefreshMonoStatus}
+                onOpenInformedDecision={onOpenInformedDecision}
+                feedbackMessage={monoFeedbackMessage}
+                feedbackError={monoFeedbackError}
+            />
+
             <div className="detail-section-title">Internal Checkers (System Computed)</div>
 
             <div className="detail-card border-left-primary">

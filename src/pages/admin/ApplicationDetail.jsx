@@ -7,6 +7,7 @@ import StatusBadge from '../../components/StatusBadge'
 import ApplicantSnapshot from '../../components/admin/ApplicationDetail/ApplicantSnapshot'
 import VerificationRisk from '../../components/admin/ApplicationDetail/VerificationRisk'
 import DecisionPanel from '../../components/admin/ApplicationDetail/DecisionPanel'
+import MonoInformedDecisionModal from '../../components/admin/ApplicationDetail/MonoInformedDecisionModal'
 
 export default function ApplicationDetail() {
     const { id } = useParams()
@@ -14,31 +15,38 @@ export default function ApplicationDetail() {
     const [loading, setLoading] = useState(true)
     const [loan, setLoan] = useState(null)
     const [error, setError] = useState(null)
+    const [monoInitiating, setMonoInitiating] = useState(false)
+    const [monoRefreshing, setMonoRefreshing] = useState(false)
+    const [monoFeedbackMessage, setMonoFeedbackMessage] = useState('')
+    const [monoFeedbackError, setMonoFeedbackError] = useState('')
+    const [showMonoInformedDecision, setShowMonoInformedDecision] = useState(false)
+
+    const enrichLoan = (loanPayload) => ({
+        ...loanPayload,
+        affordability: computeAffordability(loanPayload),
+        riskFlags: computeRiskFlags(loanPayload),
+    })
+
+    const loadLoanDetails = async ({ silent = false } = {}) => {
+        try {
+            if (!silent) setLoading(true)
+            const found = await adminService.getLoanById(id)
+            setLoan(enrichLoan(found))
+            setError(null)
+        } catch (err) {
+            console.error('Error loading application:', err)
+            setError('Failed to load application details')
+        } finally {
+            if (!silent) setLoading(false)
+        }
+    }
 
     useEffect(() => {
-        async function loadLoanDetails() {
-            try {
-                setLoading(true)
-                const found = await adminService.getLoanById(id)
-
-                // Compute on-the-fly checkers
-                const enriched = {
-                    ...found,
-                    affordability: computeAffordability(found),
-                    riskFlags: computeRiskFlags(found)
-                }
-
-                setLoan(enriched)
-            } catch (err) {
-                console.error('Error loading application:', err)
-                setError('Failed to load application details')
-            } finally {
-                setLoading(false)
-            }
-        }
-
         // Slight delay to simulate network
-        setTimeout(loadLoanDetails, 300)
+        const timer = setTimeout(() => {
+            loadLoanDetails()
+        }, 300)
+        return () => clearTimeout(timer)
     }, [id])
 
     // Handlers passed to DecisionPanel
@@ -72,6 +80,48 @@ export default function ApplicationDetail() {
         }
     }
 
+    const handleInitiateMonoConnect = async () => {
+        if (!loan?.id) return
+
+        try {
+            setMonoInitiating(true)
+            setMonoFeedbackMessage('')
+            setMonoFeedbackError('')
+
+            const response = await adminService.initiateMonoConnectForLoan(loan.id, {
+                redirectUrl:
+                    import.meta.env.VITE_MONO_REDIRECT_URL ||
+                    `${window.location.origin}/track`,
+            })
+
+            setMonoFeedbackMessage(
+                response?.message || 'Mono connect link has been sent to the user email',
+            )
+            await loadLoanDetails({ silent: true })
+        } catch (err) {
+            setMonoFeedbackError(err.message || 'Failed to initiate Mono connect')
+        } finally {
+            setMonoInitiating(false)
+        }
+    }
+
+    const handleRefreshMonoStatus = async () => {
+        try {
+            setMonoRefreshing(true)
+            await loadLoanDetails({ silent: true })
+        } finally {
+            setMonoRefreshing(false)
+        }
+    }
+
+    const handleOpenInformedDecision = () => {
+        setShowMonoInformedDecision(true)
+    }
+
+    const handleCloseInformedDecision = () => {
+        setShowMonoInformedDecision(false)
+    }
+
     if (loading) return <div className="admin-loading">Loading application {id}...</div>
     if (error) return <div className="admin-page"><div className="alert-box alert-error">{error}</div><button className="button button--secondary mt-4" onClick={() => navigate('/admin/applications')}>← Back to Applications</button></div>
     if (!loan) return null
@@ -96,7 +146,16 @@ export default function ApplicationDetail() {
                 <ApplicantSnapshot loan={loan} />
 
                 {/* Middle Column: Verification & Risk */}
-                <VerificationRisk loan={loan} />
+                <VerificationRisk
+                    loan={loan}
+                    onInitiateMonoConnect={handleInitiateMonoConnect}
+                    onRefreshMonoStatus={handleRefreshMonoStatus}
+                    monoInitiating={monoInitiating}
+                    monoRefreshing={monoRefreshing}
+                    monoFeedbackMessage={monoFeedbackMessage}
+                    monoFeedbackError={monoFeedbackError}
+                    onOpenInformedDecision={handleOpenInformedDecision}
+                />
 
                 {/* Right Column: Decision Panel */}
                 <DecisionPanel
@@ -106,6 +165,12 @@ export default function ApplicationDetail() {
                     onRequestInfo={handleRequestInfo}
                 />
             </div>
+
+            <MonoInformedDecisionModal
+                open={showMonoInformedDecision}
+                onClose={handleCloseInformedDecision}
+                loan={loan}
+            />
         </div>
     )
 }

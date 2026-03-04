@@ -153,6 +153,14 @@ const getValidAccessToken = async () => {
 
 const normalizeLoan = (loan) => {
   if (!loan) return loan
+  const monoConnectionStatus =
+    loan.monoConnectionStatus ||
+    (loan.monoAccountId
+      ? 'linked'
+      : loan.monoConnectInitiatedAt
+        ? 'pending'
+        : 'not_started')
+
   return {
     ...loan,
     id: loan.id || loan._id,
@@ -163,6 +171,7 @@ const normalizeLoan = (loan) => {
       loan.hospitalDetails?.name ||
       '—',
     estimatedCost: loan.estimatedCost ?? loan.requestedAmount ?? 0,
+    monoConnectionStatus,
   }
 }
 
@@ -327,6 +336,11 @@ export const adminService = {
     return adminRequest(`/wallets/overview${query}`)
   },
 
+  getOrganizationEssentialWallets: async (filters = {}) => {
+    const query = buildQuery(filters)
+    return adminRequest(`/wallets/organization/essential${query}`)
+  },
+
   getWalletTransactions: async (filters = {}) => {
     const query = buildQuery(filters)
     return adminRequest(`/wallets/transactions${query}`)
@@ -339,6 +353,13 @@ export const adminService = {
 
   fundWallet: async (walletId, payload) => {
     return adminRequest(`/wallets/${walletId}/fund`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  fundOrganizationWallet: async (payload) => {
+    return adminRequest('/wallets/organization/fund', {
       method: 'POST',
       body: JSON.stringify(payload),
     })
@@ -368,6 +389,20 @@ export const adminService = {
     else allLocal.push(normalized)
     syncLoansToLocal(allLocal)
     return normalized
+  },
+
+  initiateMonoConnectForLoan: async (loanId, payload = {}) => {
+    return adminRequest(`/admin/loan-applications/${loanId}/mono/connect/initiate`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  getMonoInformedDecisionForLoan: async (loanId, payload = {}) => {
+    return adminRequest(`/admin/loan-applications/${loanId}/mono/informed-decision`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
   },
 
   // Dashboard KPIs
