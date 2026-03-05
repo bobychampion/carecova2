@@ -405,6 +405,16 @@ export const adminService = {
     })
   },
 
+  getMonoInformedDecisionSectionForLoan: async (loanId, section, payload = {}) => {
+    return adminRequest(
+      `/admin/loan-applications/${loanId}/mono/informed-decision/sections/${section}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+    )
+  },
+
   // Dashboard KPIs
   getKPIs: async () => {
     const loans = await adminService.getAllLoans()
