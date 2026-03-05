@@ -192,6 +192,189 @@ const formatKpiValue = (kpiKey, kpiValue) => {
   return formatCurrency(kpiValue)
 }
 
+const average = (values) => {
+  if (!Array.isArray(values) || values.length === 0) return undefined
+  const total = values.reduce((sum, value) => sum + value, 0)
+  return total / values.length
+}
+
+const round = (value, digits = 2) => {
+  if (typeof value !== 'number' || Number.isNaN(value)) return undefined
+  const power = 10 ** digits
+  return Math.round(value * power) / power
+}
+
+const deriveAnalysisFallback = (analysis, sections, form) => {
+  const output = { ...(analysis || {}) }
+  const resolvedSections = sections || {}
+
+  const creditsHistory = asArray(
+    asObject(asObject(resolvedSections.credits?.data).data).history,
+  )
+  const inflowsHistory = asArray(
+    asObject(asObject(resolvedSections.inflows?.data).data).history,
+  )
+  const incomeRecords = asArray(asObject(resolvedSections.incomeRecords?.data).data)
+  const newestIncome = asObject(asObject(incomeRecords[0]).income)
+
+  const series =
+    creditsHistory.length > 0
+      ? creditsHistory
+      : inflowsHistory
+  const amounts = series
+    .map((item) => asNumber(asObject(item).amount))
+    .filter((value) => typeof value === 'number')
+    .slice(0, 6)
+
+  const monthlyIncomeFromRecord =
+    asNumber(newestIncome.monthly_income) ??
+    asNumber(newestIncome.aggregated_monthly_average) ??
+    asNumber(newestIncome.aggregated_monthly_average_regular)
+
+  if (output.averageMonthlyIncome === undefined) {
+    output.averageMonthlyIncome = round(
+      amounts.length > 0 ? average(amounts) : monthlyIncomeFromRecord,
+    )
+  }
+  if (output.incomeMinMonthly === undefined) {
+    output.incomeMinMonthly =
+      amounts.length > 0
+        ? round(Math.min(...amounts))
+        : output.averageMonthlyIncome
+  }
+  if (output.incomeMaxMonthly === undefined) {
+    output.incomeMaxMonthly =
+      amounts.length > 0
+        ? round(Math.max(...amounts))
+        : output.averageMonthlyIncome
+  }
+
+  const streamStabilities = asArray(newestIncome.income_streams)
+    .map((item) => asNumber(asObject(item).stability))
+    .filter((value) => typeof value === 'number')
+  if (output.incomeStabilityScore === undefined && streamStabilities.length > 0) {
+    output.incomeStabilityScore = round(average(streamStabilities))
+  }
+  if (!output.incomeStabilityLabel && typeof output.incomeStabilityScore === 'number') {
+    if (output.incomeStabilityScore >= 0.8) output.incomeStabilityLabel = 'consistent'
+    else if (output.incomeStabilityScore >= 0.6) output.incomeStabilityLabel = 'moderate'
+    else output.incomeStabilityLabel = 'unstable'
+  }
+
+  const principal = toNumberOrEmpty(form?.principal)
+  const term = toNumberOrEmpty(form?.term)
+  const existingDebtFromCredit = asNumber(
+    asObject(asObject(asObject(resolvedSections.creditworthiness?.data).data).data)
+      .existing_monthly_debt,
+  )
+  const existingDebt =
+    output.existingDebtMonthly ??
+    existingDebtFromCredit ??
+    0
+  output.existingDebtMonthly = round(existingDebt)
+
+  if (
+    output.proposedMonthlyRepayment === undefined &&
+    principal !== '' &&
+    term !== '' &&
+    term > 0
+  ) {
+    output.proposedMonthlyRepayment = round(principal / term)
+  }
+
+  if (
+    output.totalDebtObligationMonthly === undefined &&
+    typeof output.proposedMonthlyRepayment === 'number'
+  ) {
+    output.totalDebtObligationMonthly = round(
+      (output.existingDebtMonthly || 0) + output.proposedMonthlyRepayment,
+    )
+  }
+
+  if (
+    output.newRepaymentToIncomeRatio === undefined &&
+    typeof output.proposedMonthlyRepayment === 'number' &&
+    typeof output.averageMonthlyIncome === 'number' &&
+    output.averageMonthlyIncome > 0
+  ) {
+    output.newRepaymentToIncomeRatio = round(
+      output.proposedMonthlyRepayment / output.averageMonthlyIncome,
+      4,
+    )
+  }
+
+  if (
+    output.totalDebtToIncomeRatio === undefined &&
+    typeof output.totalDebtObligationMonthly === 'number' &&
+    typeof output.averageMonthlyIncome === 'number' &&
+    output.averageMonthlyIncome > 0
+  ) {
+    output.totalDebtToIncomeRatio = round(
+      output.totalDebtObligationMonthly / output.averageMonthlyIncome,
+      4,
+    )
+  }
+
+  const txItems = asArray(asObject(resolvedSections.transactions?.data).data)
+  const latestByMonth = {}
+  txItems.forEach((item) => {
+    const record = asObject(item)
+    const balance = asNumber(record.balance)
+    const dateRaw = record.date || record.created_at || record.transaction_date
+    if (balance === undefined || !dateRaw) return
+    const date = new Date(String(dateRaw))
+    if (Number.isNaN(date.getTime())) return
+    const month = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`
+    const existing = latestByMonth[month]
+    if (!existing || date.getTime() > existing.time) {
+      latestByMonth[month] = { time: date.getTime(), balance }
+    }
+  })
+  if (output.averageMonthEndBalance === undefined) {
+    const monthBalances = Object.values(latestByMonth)
+      .sort((a, b) => b.time - a.time)
+      .slice(0, 6)
+      .map((item) => item.balance)
+    if (monthBalances.length > 0) {
+      output.averageMonthEndBalance = round(average(monthBalances))
+    } else {
+      const accountNode = asObject(asObject(asObject(resolvedSections.account?.data).data).account)
+      const accountBalance = asNumber(accountNode.balance)
+      if (accountBalance !== undefined) output.averageMonthEndBalance = round(accountBalance)
+    }
+  }
+
+  if (
+    output.liquidityBufferRequired === undefined &&
+    typeof output.averageMonthlyIncome === 'number'
+  ) {
+    output.liquidityBufferRequired = round(0.1 * output.averageMonthlyIncome)
+  }
+  if (
+    output.netSurplusAfterRepayment === undefined &&
+    typeof output.averageMonthEndBalance === 'number' &&
+    typeof output.proposedMonthlyRepayment === 'number'
+  ) {
+    output.netSurplusAfterRepayment = round(
+      output.averageMonthEndBalance - output.proposedMonthlyRepayment,
+    )
+  }
+
+  if (!output.summary && typeof output.averageMonthlyIncome === 'number') {
+    output.summary = {
+      income: `Average monthly income is ${formatCurrency(output.averageMonthlyIncome)} with ${output.incomeStabilityLabel || 'unknown'} stability.`,
+      affordability: `Proposed repayment is ${formatCurrency(output.proposedMonthlyRepayment)} (${formatPercent(output.newRepaymentToIncomeRatio)} of income).`,
+      debt: `Total monthly debt obligation is ${formatCurrency(output.totalDebtObligationMonthly)} (${formatPercent(output.totalDebtToIncomeRatio)} DTI).`,
+      liquidity: `Average month-end balance is ${formatCurrency(output.averageMonthEndBalance)} and buffer after repayment is ${formatCurrency(output.netSurplusAfterRepayment)}.`,
+      decision:
+        output.finalReason ||
+        'Use these KPIs with rule checks for final super-admin decision.',
+    }
+  }
+
+  return output
+}
+
 export default function MonoInformedDecisionModal({ open, onClose, loan }) {
   const [loadingOverview, setLoadingOverview] = useState(false)
   const [sectionLoading, setSectionLoading] = useState({})
@@ -340,7 +523,7 @@ export default function MonoInformedDecisionModal({ open, onClose, loan }) {
 
   if (!open) return null
 
-  const analysis = report?.analysis || {}
+  const analysis = deriveAnalysisFallback(report?.analysis || {}, report?.sections || {}, form)
   const successCount = sectionEntries.filter(
     ([, section]) => section?.status === 'success',
   ).length
