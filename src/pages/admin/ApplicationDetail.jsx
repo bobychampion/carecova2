@@ -21,37 +21,30 @@ export default function ApplicationDetail() {
     const [error, setError] = useState(null)
     const [activeTab, setActiveTab] = useState('review') // review | history
 
-    useEffect(() => {
-        async function loadLoanDetails() {
-            try {
-                setLoading(true)
-                // Find loan by ID
-                const allLoans = await loanService.getAllApplications()
-                const found = allLoans.find(l => l.id === id)
-
-                if (!found) {
-                    setError('Application not found')
-                    return
-                }
-
-                // Compute on-the-fly checkers
-                const enriched = {
-                    ...found,
-                    affordability: computeAffordability(found),
-                    riskFlags: computeRiskFlags(found)
-                }
-
-                setLoan(enriched)
-            } catch (err) {
-                console.error('Error loading application:', err)
-                setError('Failed to load application details')
-            } finally {
-                setLoading(false)
-            }
+    const loadLoanDetails = async ({ silent = false } = {}) => {
+        try {
+            if (!silent) setLoading(true)
+            const found = await adminService.getLoanById(id)
+            setLoan({
+                ...found,
+                affordability: computeAffordability(found),
+                riskFlags: computeRiskFlags(found),
+            })
+            setError(null)
+        } catch (err) {
+            console.error('Error loading application:', err)
+            setError('Failed to load application details')
+        } finally {
+            if (!silent) setLoading(false)
         }
+    }
 
+    useEffect(() => {
         // Slight delay to simulate network
-        setTimeout(loadLoanDetails, 300)
+        const timer = setTimeout(() => {
+            loadLoanDetails()
+        }, 300)
+        return () => clearTimeout(timer)
     }, [id])
 
     // Handlers
@@ -93,6 +86,48 @@ export default function ApplicationDetail() {
         } catch (err) {
             alert(err.message || 'Error requesting information')
         }
+    }
+
+    const handleInitiateMonoConnect = async () => {
+        if (!loan?.id) return
+
+        try {
+            setMonoInitiating(true)
+            setMonoFeedbackMessage('')
+            setMonoFeedbackError('')
+
+            const response = await adminService.initiateMonoConnectForLoan(loan.id, {
+                redirectUrl:
+                    import.meta.env.VITE_MONO_REDIRECT_URL ||
+                    `${window.location.origin}/track`,
+            })
+
+            setMonoFeedbackMessage(
+                response?.message || 'Mono connect link has been sent to the user email',
+            )
+            await loadLoanDetails({ silent: true })
+        } catch (err) {
+            setMonoFeedbackError(err.message || 'Failed to initiate Mono connect')
+        } finally {
+            setMonoInitiating(false)
+        }
+    }
+
+    const handleRefreshMonoStatus = async () => {
+        try {
+            setMonoRefreshing(true)
+            await loadLoanDetails({ silent: true })
+        } finally {
+            setMonoRefreshing(false)
+        }
+    }
+
+    const handleOpenInformedDecision = () => {
+        setShowMonoInformedDecision(true)
+    }
+
+    const handleCloseInformedDecision = () => {
+        setShowMonoInformedDecision(false)
     }
 
     if (loading) return <div className="admin-loading">Loading application {id}...</div>

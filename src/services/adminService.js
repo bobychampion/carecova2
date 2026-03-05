@@ -64,6 +64,15 @@ function saveWallet(wallet) {
   localStorage.setItem(WALLET_STORAGE_KEY, JSON.stringify(wallet))
 }
 
+function getStoredSession() {
+  try {
+    const stored = localStorage.getItem(ADMIN_STORAGE_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
 export const adminService = {
   login: async (username, password) => {
     return new Promise((resolve, reject) => {
@@ -93,28 +102,41 @@ export const adminService = {
   },
 
   logout: () => {
-    auditService.record('logout', { adminName: 'admin' })
+    const session = getStoredSession()
+    auditService.record('logout', { adminName: session?.name || 'admin' })
     localStorage.removeItem(ADMIN_STORAGE_KEY)
   },
 
-  getSession: () => {
-    try {
-      const stored = localStorage.getItem(ADMIN_STORAGE_KEY)
-      if (!stored) return null
-      const session = JSON.parse(stored)
-      return session.loggedIn ? session : null
-    } catch {
-      return null
-    }
-  },
+  getSession: () => getStoredSession(),
 
-  isAuthenticated: () => {
-    return adminService.getSession() !== null
+  isAuthenticated: () => adminService.getSession() !== null,
+
+  debitWallet: async () => {
+    throw new Error('Wallet API not configured for local mode')
   },
 
   getAllLoans: async () => {
     return loanService.getAllApplications()
   },
+
+  getLoanById: async (loanId) => {
+    return loanService.getApplication(loanId)
+  },
+
+  initiateMonoConnectForLoan: async () => {
+    throw new Error('Mono connect not configured for local mode')
+  },
+
+  getMonoInformedDecisionForLoan: async () => {
+    throw new Error('Mono informed decision not configured for local mode')
+  },
+
+  getWallets: async () => [],
+  getWalletOverview: async () => ({ totalBalance: 0, currency: 'NGN' }),
+  getWalletTransactions: async () => [],
+  getWalletStatement: async () => ({ entries: [] }),
+  fundWallet: async () => {},
+  fundOrganizationWallet: async () => {},
 
   // Dashboard KPIs
   getKPIs: async () => {

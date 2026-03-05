@@ -25,6 +25,7 @@ import RulesConfig from './pages/admin/RulesConfig'
 import AuditLog from './pages/admin/AuditLog'
 import UserManagement from './pages/admin/UserManagement'
 import RecoveryWorkbench from './pages/admin/RecoveryWorkbench'
+import OrganizationWallets from './pages/admin/OrganizationWallets'
 // Credit Officer Portal
 import CreditLayout from './pages/credit/CreditLayout'
 import CreditDashboard from './pages/credit/CreditDashboard'
@@ -80,6 +81,7 @@ function App() {
           <Route path="loans" element={<ActiveLoans />} />
           <Route path="loans/:id" element={<LoanDetail />} />
           <Route path="repayments" element={<Repayments />} />
+          <Route path="wallets" element={<OrganizationWallets />} />
           <Route path="rules" element={<RulesConfig />} />
           <Route path="audit" element={<AuditLog />} />
           <Route path="users" element={<UserManagement />} />

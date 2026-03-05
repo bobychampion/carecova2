@@ -44,7 +44,10 @@ export const validateStep = (step, formData) => {
       if (!formData.lga || !formData.lga.trim()) errors.lga = 'LGA is required'
       if (!formData.city || !formData.city.trim()) errors.city = 'City/Town is required'
       if (!formData.homeAddress || !formData.homeAddress.trim()) errors.homeAddress = 'Home address is required'
-      const hasIdDoc = formData.documents && formData.documents.id_document && formData.documents.id_document.fileName
+      const hasIdDoc =
+        formData.documents &&
+        formData.documents.id_document &&
+        (formData.documents.id_document.fileName || formData.documents.id_document.url)
       if (!hasIdDoc) errors.id_document = 'Government-issued ID is required'
       break
     }

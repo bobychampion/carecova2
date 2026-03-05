@@ -16,6 +16,7 @@ import { trackingService } from '../services/trackingService'
 import MoneyInput from '../components/MoneyInput'
 import { getSuggestedHospitals } from '../data/mockPartnerHospitals'
 import { useAffordabilityCheck } from '../hooks/useAffordabilityCheck'
+import { uploadFileToCloudinary } from '../services/cloudinaryService'
 
 const TOTAL_STEPS = 5
 
@@ -88,6 +89,7 @@ export default function Apply() {
 
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [uploadingIdDocument, setUploadingIdDocument] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [loanId, setLoanId] = useState(null)
   const [errors, setErrors] = useState({})
@@ -441,11 +443,46 @@ export default function Apply() {
                     accept=".pdf,.jpg,.jpeg,.png"
                     className="document-upload-input"
                     style={{ marginTop: '0.5rem', display: 'block' }}
-                    onChange={(e) => {
+                    disabled={uploadingIdDocument}
+                    onChange={async (e) => {
                       const file = e.target.files?.[0]
-                      if (file) setFormData((prev) => ({ ...prev, documents: { ...prev.documents, id_document: { fileName: file.name, fileSize: file.size } } }))
+                      if (!file) return
+
+                      setUploadingIdDocument(true)
+                      try {
+                        const uploaded = await uploadFileToCloudinary(file, {
+                          folder: 'carecova/id-documents',
+                        })
+                        setFormData((prev) => ({
+                          ...prev,
+                          documents: {
+                            ...prev.documents,
+                            id_document: {
+                              fileName: uploaded.fileName,
+                              fileSize: uploaded.fileSize,
+                              mimeType: uploaded.mimeType,
+                              url: uploaded.url,
+                              storageKey: uploaded.storageKey,
+                            },
+                          },
+                        }))
+                        setErrors((prev) => ({ ...prev, id_document: '' }))
+                      } catch (error) {
+                        setErrors((prev) => ({
+                          ...prev,
+                          id_document: error.message || 'Failed to upload ID document',
+                        }))
+                      } finally {
+                        setUploadingIdDocument(false)
+                        e.target.value = ''
+                      }
                     }}
                   />
+                )}
+                {uploadingIdDocument && (
+                  <span className="caption" style={{ display: 'block', marginTop: '0.4rem' }}>
+                    Uploading ID document...
+                  </span>
                 )}
                 {errors.id_document && <span className="input-error">{errors.id_document}</span>}
               </div>

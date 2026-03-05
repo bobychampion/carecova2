@@ -23,6 +23,7 @@ export default function AdminSidebar({ onLogout }) {
         { name: 'Applications', path: '/admin/applications', icon: <ClipboardList size={18} />, roles: ['admin', 'sales', 'support'] },
         { name: 'Active Loans', path: '/admin/loans', icon: <CreditCard size={18} />, roles: ['admin', 'sales', 'support'] },
         { name: 'Repayments', path: '/admin/repayments', icon: <DollarSign size={18} />, roles: ['admin', 'support'] },
+        { name: 'Org Wallets', path: '/admin/wallets', icon: <DollarSign size={18} />, roles: ['admin'] },
         { name: 'Rules & Config', path: '/admin/rules', icon: <Settings size={18} />, roles: ['admin'] },
         { name: 'Audit Logs', path: '/admin/audit', icon: <FileText size={18} />, roles: ['admin'] },
         { name: 'User Management', path: '/admin/users', icon: <UserCheck size={18} />, roles: ['admin'] },
