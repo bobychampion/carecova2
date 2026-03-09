@@ -971,6 +971,116 @@
   flex-wrap: wrap;
 }
 
+/* ==================== Customer Welcome (post-apply) ==================== */
+.section-welcome {
+  padding-top: var(--space-6);
+  padding-bottom: var(--space-8);
+}
+
+.customer-welcome-card {
+  max-width: 560px;
+  margin: 0 auto;
+  text-align: center;
+  padding: var(--space-8);
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--color-border-light);
+  animation: scaleIn 0.4s var(--ease-out);
+}
+
+.customer-welcome-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--space-4);
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: #fff;
+  font-size: 1.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-primary);
+}
+
+.customer-welcome-title {
+  font-family: var(--font-display);
+  font-size: var(--text-h1);
+  color: var(--color-text);
+  margin-bottom: var(--space-2);
+}
+
+.customer-welcome-lead {
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-5);
+  line-height: 1.5;
+}
+
+.customer-welcome-id-box {
+  text-align: center;
+  padding: var(--space-4);
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-primary);
+  margin-bottom: var(--space-5);
+}
+
+.customer-welcome-id-label {
+  display: block;
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-1);
+}
+
+.customer-welcome-id-value {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  color: var(--color-primary);
+  letter-spacing: 0.02em;
+}
+
+.customer-welcome-id-hint {
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  margin-top: var(--space-2);
+  margin-bottom: 0;
+}
+
+.customer-welcome-next {
+  text-align: left;
+  margin-bottom: var(--space-5);
+  padding: var(--space-4);
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+}
+
+.customer-welcome-next h3 {
+  font-size: var(--text-body);
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+  color: var(--color-text);
+}
+
+.customer-welcome-next ul {
+  margin: 0;
+  padding-left: var(--space-4);
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.customer-welcome-next li {
+  margin-bottom: var(--space-1);
+}
+
+.customer-welcome-actions {
+  justify-content: center;
+}
+
 /* ==================== Track Page ==================== */
 .track-card {
   background: var(--color-bg-elevated);
@@ -984,6 +1094,35 @@
 .track-form {
   display: grid;
   gap: var(--space-3);
+}
+
+.track-welcome-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-light);
+}
+
+.track-welcome-text {
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.track-demo-badge {
+  font-size: var(--text-caption);
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
 }
 
 .loan-details {
@@ -1372,6 +1511,432 @@
 
 .login-note p {
   font-size: var(--text-label);
+  color: var(--color-text-muted);
+}
+
+/* ==================== Customer Login ==================== */
+.customer-login-section {
+  padding-top: var(--space-6);
+  padding-bottom: var(--space-8);
+}
+
+.customer-login-card {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: var(--space-6);
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--color-border-light);
+}
+
+.customer-login-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  margin-bottom: var(--space-1);
+  color: var(--color-text);
+}
+
+.customer-login-subtitle {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-4);
+}
+
+.customer-login-form {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.customer-login-error {
+  padding: var(--space-2);
+  background: var(--color-error-subtle);
+  color: var(--color-error);
+  border-radius: var(--radius-md);
+  font-size: var(--text-body-sm);
+}
+
+.customer-login-phone-sent {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.customer-login-phone-sent .link-button {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  font-size: inherit;
+}
+
+.customer-login-demo {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border-light);
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.customer-login-links {
+  margin-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.customer-login-links a {
+  font-size: var(--text-body-sm);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.customer-login-links a:hover {
+  text-decoration: underline;
+}
+
+.customer-welcome-portal-hint {
+  margin-top: var(--space-3);
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* ==================== Customer Portal Layout ==================== */
+.customer-portal-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+}
+
+.customer-portal-header {
+  background: var(--color-bg-elevated);
+  border-bottom: 1px solid var(--color-border-light);
+  padding: var(--space-2) var(--space-4);
+}
+
+.customer-portal-header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.customer-portal-brand {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.customer-portal-brand:hover {
+  color: var(--color-primary-dark);
+}
+
+.customer-portal-nav {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.customer-portal-nav-link {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.customer-portal-nav-link:hover {
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+.customer-portal-nav-link.active {
+  color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.customer-portal-user {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.customer-portal-name {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+}
+
+.customer-portal-logout {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-caption);
+  color: var(--color-primary);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.customer-portal-logout:hover {
+  background: var(--color-bg);
+}
+
+.customer-portal-main {
+  flex: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  padding: var(--space-5) var(--space-4);
+}
+
+.customer-portal-loading,
+.customer-portal-error {
+  text-align: center;
+  padding: var(--space-8);
+  color: var(--color-text-muted);
+}
+
+.customer-portal-error a {
+  color: var(--color-primary);
+}
+
+/* Customer Overview */
+.customer-overview-title {
+  font-size: 1.5rem;
+  margin-bottom: var(--space-1);
+}
+
+.customer-overview-subtitle {
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-5);
+}
+
+.customer-overview-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.customer-overview-card {
+  padding: var(--space-4);
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+}
+
+.customer-overview-card.highlight {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.customer-overview-card-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.customer-overview-card-label {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+}
+
+.customer-overview-card-meta {
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+}
+
+.customer-overview-section h2 {
+  font-size: 1.125rem;
+  margin-bottom: var(--space-3);
+}
+
+.customer-overview-empty {
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.customer-overview-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-3);
+}
+
+.customer-overview-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-light);
+  margin-bottom: var(--space-2);
+  text-decoration: none;
+  color: inherit;
+}
+
+.customer-overview-list-item:hover {
+  background: var(--color-bg-elevated);
+}
+
+.customer-overview-list-id {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.customer-overview-list-amount {
+  margin-left: auto;
+  font-weight: 600;
+}
+
+.customer-overview-link {
+  font-size: var(--text-body-sm);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+/* Customer Loans list */
+.customer-loans-title {
+  font-size: 1.5rem;
+  margin-bottom: var(--space-1);
+}
+
+.customer-loans-subtitle {
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-5);
+}
+
+.customer-loans-empty {
+  text-align: center;
+  padding: var(--space-8);
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-lg);
+}
+
+.customer-loans-empty .button {
+  margin-top: var(--space-3);
+}
+
+.customer-loans-list {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.customer-loans-card {
+  display: block;
+  padding: var(--space-4);
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  text-decoration: none;
+  color: inherit;
+}
+
+.customer-loans-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.customer-loans-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.customer-loans-card-id {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.customer-loans-card-body {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.customer-loans-card-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-body-sm);
+}
+
+.customer-loans-card-progress {
+  margin-top: var(--space-2);
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+
+.customer-loans-card-progress-bar {
+  height: 6px;
+  background: var(--color-primary);
+  border-radius: 99px;
+  margin-bottom: var(--space-1);
+}
+
+.customer-loans-card-footer {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border-light);
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+
+/* Customer Loan Detail */
+.customer-loan-detail-header {
+  margin-bottom: var(--space-5);
+}
+
+.customer-loan-detail-back {
+  display: inline-block;
+  font-size: var(--text-body-sm);
+  color: var(--color-primary);
+  text-decoration: none;
+  margin-bottom: var(--space-2);
+}
+
+.customer-loan-detail-title {
+  font-size: 1.5rem;
+  margin-bottom: var(--space-2);
+}
+
+.customer-loan-detail-cta {
+  padding: var(--space-4);
+  background: var(--color-primary-subtle);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-5);
+}
+
+.customer-loan-detail-cta .button {
+  margin-top: var(--space-2);
+}
+
+.customer-loan-detail-info h2 {
+  font-size: 1.125rem;
+  margin-bottom: var(--space-3);
+}
+
+.customer-loan-detail-dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.customer-loan-detail-dl dt {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.customer-loan-detail-status-note {
+  font-size: var(--text-body-sm);
   color: var(--color-text-muted);
 }
 

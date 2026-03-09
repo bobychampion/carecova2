@@ -11,6 +11,7 @@ import ApplicantSnapshot from '../../components/admin/ApplicationDetail/Applican
 import VerificationRisk from '../../components/admin/ApplicationDetail/VerificationRisk'
 import DecisionPanel from '../../components/admin/ApplicationDetail/DecisionPanel'
 import SalesDataCollection from '../../components/admin/ApplicationDetail/SalesDataCollection'
+import MonoInformedDecisionModal from '../../components/admin/ApplicationDetail/MonoInformedDecisionModal'
 
 export default function ApplicationDetail() {
     const { id } = useParams()
@@ -20,6 +21,11 @@ export default function ApplicationDetail() {
     const [loan, setLoan] = useState(null)
     const [error, setError] = useState(null)
     const [activeTab, setActiveTab] = useState('review') // review | history
+    const [showMonoInformedDecision, setShowMonoInformedDecision] = useState(false)
+    const [monoInitiating, setMonoInitiating] = useState(false)
+    const [monoRefreshing, setMonoRefreshing] = useState(false)
+    const [monoFeedbackMessage, setMonoFeedbackMessage] = useState('')
+    const [monoFeedbackError, setMonoFeedbackError] = useState('')
 
     const loadLoanDetails = async ({ silent = false } = {}) => {
         try {
@@ -167,7 +173,16 @@ export default function ApplicationDetail() {
                                 onApproveStage1={handleApproveStage1}
                             />
                         ) : (
-                            <VerificationRisk loan={loan} />
+                            <VerificationRisk
+                                loan={loan}
+                                onInitiateMonoConnect={handleInitiateMonoConnect}
+                                onRefreshMonoStatus={handleRefreshMonoStatus}
+                                onOpenInformedDecision={handleOpenInformedDecision}
+                                monoInitiating={monoInitiating}
+                                monoRefreshing={monoRefreshing}
+                                monoFeedbackMessage={monoFeedbackMessage}
+                                monoFeedbackError={monoFeedbackError}
+                            />
                         )}
                     </div>
 
@@ -187,6 +202,12 @@ export default function ApplicationDetail() {
                     </div>
                 </div>
             )}
+
+            <MonoInformedDecisionModal
+                open={showMonoInformedDecision}
+                onClose={handleCloseInformedDecision}
+                loan={loan}
+            />
         </div>
     )
 }

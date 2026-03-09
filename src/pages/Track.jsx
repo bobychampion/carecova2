@@ -73,6 +73,14 @@ export default function Track() {
 
             {loan && (
               <>
+                <div className="track-welcome-bar">
+                  <p className="track-welcome-text">
+                    Welcome back{loan.fullName || loan.patientName ? `, ${(loan.fullName || loan.patientName).split(' ')[0]}` : ''}!
+                  </p>
+                  {loan.id === 'LN-DEMO' && (
+                    <span className="track-demo-badge" title="Sample customer journey for presentations">Presentation demo</span>
+                  )}
+                </div>
                 {loan.status === 'approved' && !loan.offerAcceptedAt ? (
                   <div className="offer-cta-card">
                     <h3>Your application has been approved</h3>

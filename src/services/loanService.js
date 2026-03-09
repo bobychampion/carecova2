@@ -1,10 +1,12 @@
 import { mockApplications } from '../data/mockApplications'
 import { computeRiskScore } from '../utils/riskScoring'
+import { customerAuthService } from './customerAuthService'
 
 const STORAGE_KEY = 'carecova_loans'
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000').replace(/\/$/, '')
-const API_ROOT = `${API_BASE_URL}/api`
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+const API_ROOT = API_BASE_URL ? `${API_BASE_URL}/api` : ''
+const USE_BACKEND = !!API_BASE_URL
 
 const TENOR_TO_MONTHS = { '1': 1, '2': 2, '3-4': 4, '6': 6 }
 
@@ -17,6 +19,14 @@ const getLoans = () => {
       const demo = mockApplications.find((m) => m.id === 'LN-100011')
       if (demo) {
         loans = [...loans, JSON.parse(JSON.stringify(demo))]
+        saveLoans(loans)
+      }
+    }
+    // Ensure presentation demo customer exists (Track with ID "LN-DEMO")
+    if (!loans.some((l) => l.id === 'LN-DEMO')) {
+      const presentationDemo = mockApplications.find((m) => m.id === 'LN-DEMO')
+      if (presentationDemo) {
+        loans = [...loans, JSON.parse(JSON.stringify(presentationDemo))]
         saveLoans(loans)
       }
     }
@@ -45,6 +55,11 @@ const upsertLoan = (loan) => {
 }
 
 const findLocalLoan = (id) => getLoans().find((loan) => loan.id === id)
+
+function generateLoanId() {
+  const n = Math.floor(Date.now() / 1000) % 1000000
+  return `LN-${String(n).padStart(6, '0')}`
+}
 
 function preferredDurationMonths(data) {
   if (data.preferredDuration != null) return parseInt(data.preferredDuration, 10)
@@ -248,54 +263,70 @@ function normalizeLoan(data) {
   return normalized
 }
 
+function validateApplicationData(applicationData) {
+  const name = applicationData.fullName || applicationData.patientName
+  const phone = applicationData.phone
+  const requestedAmount = parseFloat(applicationData.requestedAmount || applicationData.estimatedCost)
+  if (!name || !phone || !applicationData.state || !applicationData.lga || !applicationData.city || !applicationData.homeAddress || !applicationData.preferredContact) {
+    throw new Error('Applicant and location fields are required')
+  }
+  if (!applicationData.treatmentCategory || !applicationData.healthDescription || !applicationData.urgency || !applicationData.hospitalPreference) {
+    throw new Error('Treatment information is required')
+  }
+  if (applicationData.hospitalPreference === 'have_hospital' && !(applicationData.hospitalName || '').trim()) {
+    throw new Error('Hospital name is required when you have a hospital')
+  }
+  if (!applicationData.employmentType || !(applicationData.monthlyIncome ?? applicationData.monthlyIncomeRange) || !requestedAmount || (!applicationData.preferredTenor && applicationData.preferredDuration == null) || !applicationData.repaymentMethod) {
+    throw new Error('Financial information is required')
+  }
+  if (applicationData.hasActiveLoans === true || applicationData.hasActiveLoans === 'yes') {
+    if (applicationData.activeLoansMonthlyRepayment == null || !(applicationData.lenderType || '').trim()) {
+      throw new Error('Active loans details are required when you have active loans')
+    }
+  }
+  if (applicationData.addGuarantor === true || applicationData.addGuarantor === 'yes') {
+    if (!(applicationData.guarantorName || '').trim() || !(applicationData.guarantorPhone || '').trim() || !(applicationData.guarantorRelationship || '').trim()) {
+      throw new Error('Guarantor details are required when adding a guarantor')
+    }
+  }
+  if (!applicationData.consentDataProcessing || !applicationData.consentTerms) {
+    throw new Error('Consent is required')
+  }
+}
+
 export const loanService = {
   submitApplication: async (applicationData) => {
+    validateApplicationData(applicationData)
+    const name = applicationData.fullName || applicationData.patientName
+
+    if (USE_BACKEND) {
+      try {
+        const payload = buildApiPayload(applicationData)
+        const created = await request('/loan-applications', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        })
+        const normalized = normalizeLoan(created)
+        if (!normalized.id) normalized.id = created?.data?.id ?? created?.id ?? created?._id ?? generateLoanId()
+        const customer = customerAuthService.findOrCreateCustomer(
+          applicationData.phone,
+          applicationData.email,
+          applicationData.fullName || name
+        )
+        normalized.customerId = customer.id
+        upsertLoan(normalized)
+        return normalized
+      } catch (err) {
+        throw err
+      }
+    }
+
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         try {
-          const name = applicationData.fullName || applicationData.patientName
-          const phone = applicationData.phone
           const requestedAmount = parseFloat(applicationData.requestedAmount || applicationData.estimatedCost)
-          if (!name || !phone || !applicationData.state || !applicationData.lga || !applicationData.city || !applicationData.homeAddress || !applicationData.preferredContact) {
-            reject(new Error('Applicant and location fields are required'))
-            return
-          }
-          if (!applicationData.treatmentCategory || !applicationData.healthDescription || !applicationData.urgency || !applicationData.hospitalPreference) {
-            reject(new Error('Treatment information is required'))
-            return
-          }
-          if (applicationData.hospitalPreference === 'have_hospital' && !(applicationData.hospitalName || '').trim()) {
-            reject(new Error('Hospital name is required when you have a hospital'))
-            return
-          }
-          if (!applicationData.employmentType || !(applicationData.monthlyIncome ?? applicationData.monthlyIncomeRange) || !requestedAmount || (!applicationData.preferredTenor && applicationData.preferredDuration == null) || !applicationData.repaymentMethod) {
-            reject(new Error('Financial information is required'))
-            return
-          }
-          if (applicationData.hasActiveLoans === true || applicationData.hasActiveLoans === 'yes') {
-            if (applicationData.activeLoansMonthlyRepayment == null || !(applicationData.lenderType || '').trim()) {
-              reject(new Error('Active loans details are required when you have active loans'))
-              return
-            }
-          }
-          if (applicationData.addGuarantor === true || applicationData.addGuarantor === 'yes') {
-            if (!(applicationData.guarantorName || '').trim() || !(applicationData.guarantorPhone || '').trim() || !(applicationData.guarantorRelationship || '').trim()) {
-              reject(new Error('Guarantor details are required when adding a guarantor'))
-              return
-            }
-          }
-          if (!applicationData.consentDataProcessing || !applicationData.consentTerms) {
-            reject(new Error('Consent is required'))
-            return
-          }
-
           const preferredDuration = preferredDurationMonths(applicationData)
-          const payload = {
-            ...applicationData,
-            patientName: name,
-            estimatedCost: requestedAmount,
-            preferredDuration,
-          }
+          const payload = { ...applicationData, patientName: name, estimatedCost: requestedAmount, preferredDuration }
           const risk = computeRiskScore(payload)
 
           const newLoan = {
@@ -347,7 +378,7 @@ export const loanService = {
             riskReasons: risk.riskReasons,
             riskRecommendation: risk.riskRecommendation,
             status: 'pending',
-            stage: 1, // Start at stage 1
+            stage: 1,
             assignedTo: null,
             submittedAt: new Date().toISOString(),
             documents: applicationData.documents || {},
@@ -356,7 +387,12 @@ export const loanService = {
             repaymentStrategy: null,
             applicantBio: null,
           }
-
+          const customer = customerAuthService.findOrCreateCustomer(
+            applicationData.phone,
+            applicationData.email,
+            applicationData.fullName || name
+          )
+          newLoan.customerId = customer.id
           const loans = getLoans()
           loans.push(newLoan)
           saveLoans(loans)
@@ -373,27 +409,31 @@ export const loanService = {
 
     const localLoan = findLocalLoan(id.trim())
 
-    try {
-      const remote = await request(`/loan-applications/${id.trim()}`)
-      const normalizedRemote = normalizeLoan(remote)
-      const merged = localLoan
-        ? {
-            ...normalizedRemote,
-            offerAcceptedAt: localLoan.offerAcceptedAt,
-            repaymentSchedule: localLoan.repaymentSchedule || normalizedRemote.repaymentSchedule,
-            totalRepayment: localLoan.totalRepayment || normalizedRemote.totalRepayment,
-            monthlyInstallment: localLoan.monthlyInstallment || normalizedRemote.monthlyInstallment,
-            outstandingBalance: localLoan.outstandingBalance || normalizedRemote.outstandingBalance,
-            totalPaid: localLoan.totalPaid || normalizedRemote.totalPaid,
-          }
-        : normalizedRemote
-
-      upsertLoan(merged)
-      return merged
-    } catch (error) {
-      if (localLoan) return localLoan
-      throw error
+    if (USE_BACKEND) {
+      try {
+        const remote = await request(`/loan-applications/${id.trim()}`)
+        const normalizedRemote = normalizeLoan(remote)
+        const merged = localLoan
+          ? {
+              ...normalizedRemote,
+              offerAcceptedAt: localLoan.offerAcceptedAt,
+              repaymentSchedule: localLoan.repaymentSchedule || normalizedRemote.repaymentSchedule,
+              totalRepayment: localLoan.totalRepayment || normalizedRemote.totalRepayment,
+              monthlyInstallment: localLoan.monthlyInstallment || normalizedRemote.monthlyInstallment,
+              outstandingBalance: localLoan.outstandingBalance || normalizedRemote.outstandingBalance,
+              totalPaid: localLoan.totalPaid || normalizedRemote.totalPaid,
+            }
+          : normalizedRemote
+        upsertLoan(merged)
+        return merged
+      } catch (error) {
+        if (localLoan) return localLoan
+        throw error
+      }
     }
+
+    if (!localLoan) throw new Error('Application not found')
+    return localLoan
   },
 
   getAllApplications: async () => {
@@ -421,5 +461,18 @@ export const loanService = {
     }
     upsertLoan(updated)
     return updated
+  },
+
+  getLoansByCustomerId: async (customerId, customerPhone) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const loans = getLoans()
+        const norm = (p) => (p || '').replace(/\D/g, '').slice(-10)
+        const match = (loan) =>
+          loan.customerId === customerId ||
+          (customerPhone && norm(loan.phone) === norm(customerPhone))
+        resolve(loans.filter(match))
+      }, 300)
+    })
   },
 }

@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Button from './Button'
 import NotificationBell from './NotificationBell'
+import { useCustomerAuth } from '../hooks/useCustomerAuth'
 import logo from '../assets/logo.png'
 
 export default function Header() {
   const [userId, setUserId] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const { isAuthenticated: customerLoggedIn } = useCustomerAuth()
 
   useEffect(() => {
     const storedUserId = localStorage.getItem('carecova_user_id')
@@ -53,9 +55,15 @@ export default function Header() {
 
         <div className="header-actions">
           {userId && <NotificationBell userId={userId} />}
-          <Link to="/profile">
-            <Button variant="ghost">Profile</Button>
-          </Link>
+          {customerLoggedIn ? (
+            <Link to="/portal">
+              <Button variant="ghost">My account</Button>
+            </Link>
+          ) : (
+            <Link to="/login">
+              <Button variant="ghost">Sign in</Button>
+            </Link>
+          )}
           <Link to="/apply">
             <Button variant="primary">Apply Now</Button>
           </Link>

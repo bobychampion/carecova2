@@ -5,6 +5,10 @@ import { getRiskConfig } from '../data/riskConfig'
 import { computeSchedule } from '../utils/lendingEngine'
 import * as commissionService from './commissionService'
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+const API_ROOT = API_BASE_URL ? `${API_BASE_URL}/api` : ''
+const USE_BACKEND = !!API_BASE_URL
+
 const ADMIN_STORAGE_KEY = 'carecova_admin_session'
 const USERS_STORAGE_KEY = 'carecova_admin_users'
 const TRANSACTIONS_STORAGE_KEY = 'carecova_transactions'
@@ -73,8 +77,96 @@ function getStoredSession() {
   }
 }
 
+function saveSession(session) {
+  if (session) localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(session))
+}
+
+function clearSession() {
+  localStorage.removeItem(ADMIN_STORAGE_KEY)
+}
+
+async function parseResponseBody(response) {
+  const contentType = response.headers.get('content-type') || ''
+  const isJson = contentType.includes('application/json')
+  const body = isJson ? await response.json() : await response.text()
+  return { isJson, body }
+}
+
+function getResponseMessage(body, isJson, fallback = 'Request failed') {
+  return (isJson && (Array.isArray(body?.message) ? body.message.join(', ') : body?.message)) || (typeof body === 'string' ? body : fallback)
+}
+
+async function adminRequest(path, options = {}) {
+  const session = getStoredSession()
+  const token = session?.accessToken
+  if (!token) throw new Error('Not authenticated')
+
+  const response = await fetch(`${API_ROOT}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      ...(options.headers || {}),
+    },
+  })
+
+  const { isJson, body } = await parseResponseBody(response)
+  if (!response.ok) {
+    if (response.status === 401) {
+      clearSession()
+      throw new Error('Session expired. Please sign in again.')
+    }
+    throw new Error(getResponseMessage(body, isJson))
+  }
+  return body
+}
+
+function normalizeLoanFromApi(loan) {
+  if (!loan) return loan
+  return {
+    ...loan,
+    id: loan.id || loan._id,
+    patientName: loan.patientName || loan.fullName,
+    fullName: loan.fullName || loan.patientName,
+    hospital: loan.hospital || loan.hospitalName || '—',
+    estimatedCost: loan.estimatedCost ?? loan.requestedAmount ?? 0,
+    submittedAt: loan.submittedAt || loan.createdAt,
+  }
+}
+
 export const adminService = {
   login: async (username, password) => {
+    if (USE_BACKEND) {
+      try {
+        const response = await fetch(`${API_ROOT}/admins/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usernameOrEmail: username, password }),
+        })
+        const { isJson, body } = await parseResponseBody(response)
+        if (!response.ok) throw new Error(getResponseMessage(body, isJson, 'Invalid credentials'))
+
+        const admin = body.admin || {}
+        const session = {
+          loggedIn: true,
+          loginTime: new Date().toISOString(),
+          accessToken: body.accessToken,
+          refreshToken: body.refreshToken,
+          admin,
+          username: admin.username || username,
+          role: admin.role || 'admin',
+          name: admin.name || admin.username || username,
+        }
+        saveSession(session)
+        auditService.record('login', { adminName: session.name, role: session.role })
+        return { username: session.username, role: session.role, name: session.name, loggedIn: true, loginTime: session.loginTime }
+      } catch (err) {
+        if (err.message?.includes('credentials') || err.message?.includes('401') || err.message?.includes('Failed to fetch')) {
+          throw err
+        }
+      }
+    }
+
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         const users = getUsers()
@@ -101,13 +193,36 @@ export const adminService = {
     })
   },
 
-  logout: () => {
+  logout: async () => {
     const session = getStoredSession()
-    auditService.record('logout', { adminName: session?.name || 'admin' })
-    localStorage.removeItem(ADMIN_STORAGE_KEY)
+    auditService.record('logout', { adminName: session?.name || session?.admin?.username || 'admin' })
+    if (USE_BACKEND && session?.accessToken) {
+      try {
+        await fetch(`${API_ROOT}/admins/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.accessToken}`,
+          },
+          body: JSON.stringify({ refreshToken: session.refreshToken }),
+        })
+      } catch (_) {}
+    }
+    clearSession()
   },
 
-  getSession: () => getStoredSession(),
+  getSession: () => {
+    const s = getStoredSession()
+    if (!s) return null
+    if (s.username !== undefined) return s
+    return {
+      username: s.admin?.username ?? s.username,
+      role: s.admin?.role ?? 'admin',
+      name: s.admin?.name ?? s.admin?.username ?? 'Admin',
+      loggedIn: s.loggedIn,
+      loginTime: s.loginTime,
+    }
+  },
 
   isAuthenticated: () => adminService.getSession() !== null,
 
@@ -116,10 +231,33 @@ export const adminService = {
   },
 
   getAllLoans: async () => {
+    const session = getStoredSession()
+    if (USE_BACKEND && session?.accessToken) {
+      try {
+        const list = await adminRequest('/admin/loan-applications')
+        const loans = (Array.isArray(list) ? list : list?.content ?? list?.data ?? []).map(normalizeLoanFromApi)
+        const local = await loanService.getAllApplications()
+        const merged = loans.map((b) => {
+          const loc = local.find((l) => l.id === b.id)
+          return loc ? { ...b, ...loc } : b
+        })
+        const localOnly = local.filter((l) => !loans.some((b) => b.id === l.id))
+        return [...merged, ...localOnly]
+      } catch (_) {}
+    }
     return loanService.getAllApplications()
   },
 
   getLoanById: async (loanId) => {
+    const session = getStoredSession()
+    if (USE_BACKEND && session?.accessToken) {
+      try {
+        const loan = await adminRequest(`/admin/loan-applications/${loanId}`)
+        const normalized = normalizeLoanFromApi(loan)
+        const local = await loanService.getApplication(loanId).catch(() => null)
+        return local ? { ...normalized, ...local } : normalized
+      } catch (_) {}
+    }
     return loanService.getApplication(loanId)
   },
 
@@ -856,7 +994,7 @@ export const adminService = {
 
 // Helpers to reduce repetition
 async function cloneLoans() {
-  return await loanService.getAllApplications()
+  return await adminService.getAllLoans()
 }
 
 function saveToStorage(loans) {

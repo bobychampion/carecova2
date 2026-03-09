@@ -3,7 +3,13 @@ import Home from './pages/Home'
 import HowItWorks from './pages/HowItWorks'
 import Partners from './pages/Partners'
 import Apply from './pages/Apply'
+import Welcome from './pages/Welcome'
 import Track from './pages/Track'
+import CustomerLogin from './pages/CustomerLogin'
+import CustomerLayout from './components/customer/CustomerLayout'
+import CustomerOverview from './pages/customer/CustomerOverview'
+import CustomerLoans from './pages/customer/CustomerLoans'
+import CustomerLoanDetail from './pages/customer/CustomerLoanDetail'
 import Offer from './pages/Offer'
 import Calculator from './pages/Calculator'
 import ResumeApplication from './pages/ResumeApplication'
@@ -32,6 +38,7 @@ import CreditDashboard from './pages/credit/CreditDashboard'
 import DisbursementQueue from './pages/credit/DisbursementQueue'
 import DisbursementCaseFile from './pages/credit/DisbursementCaseFile'
 import { useAuth } from './hooks/useAuth'
+import { useCustomerAuth } from './hooks/useCustomerAuth'
 import './App.css'
 
 function ProtectedRoute({ children }) {
@@ -55,6 +62,13 @@ function ProtectedCreditRoute({ children }) {
   return children
 }
 
+function ProtectedCustomerRoute({ children }) {
+  const { isAuthenticated, loading } = useCustomerAuth()
+  if (loading) return <div className="loading">Loading...</div>
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  return children
+}
+
 function App() {
   return (
     <BrowserRouter>
@@ -63,9 +77,16 @@ function App() {
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/partners" element={<Navigate to="/" replace />} />
         <Route path="/apply" element={<Apply />} />
+        <Route path="/welcome" element={<Welcome />} />
         <Route path="/resume" element={<ResumeApplication />} />
         <Route path="/eligibility" element={<EligibilityCheck />} />
         <Route path="/track" element={<Track />} />
+        <Route path="/login" element={<CustomerLogin />} />
+        <Route path="/portal" element={<ProtectedCustomerRoute><CustomerLayout /></ProtectedCustomerRoute>}>
+          <Route index element={<CustomerOverview />} />
+          <Route path="loans" element={<CustomerLoans />} />
+          <Route path="loans/:id" element={<CustomerLoanDetail />} />
+        </Route>
         <Route path="/offer/:applicationId" element={<Offer />} />
         <Route path="/calculator" element={<Calculator />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
