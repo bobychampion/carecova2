@@ -3,7 +3,13 @@ import Home from './pages/Home'
 import HowItWorks from './pages/HowItWorks'
 import Partners from './pages/Partners'
 import Apply from './pages/Apply'
+import Welcome from './pages/Welcome'
 import Track from './pages/Track'
+import CustomerLogin from './pages/CustomerLogin'
+import CustomerLayout from './components/customer/CustomerLayout'
+import CustomerOverview from './pages/customer/CustomerOverview'
+import CustomerLoans from './pages/customer/CustomerLoans'
+import CustomerLoanDetail from './pages/customer/CustomerLoanDetail'
 import Offer from './pages/Offer'
 import Calculator from './pages/Calculator'
 import ResumeApplication from './pages/ResumeApplication'
@@ -19,63 +25,101 @@ import Dashboard from './pages/admin/Dashboard'
 import Applications from './pages/admin/Applications'
 import ApplicationDetail from './pages/admin/ApplicationDetail'
 import ActiveLoans from './pages/admin/ActiveLoans'
+import LoanDetail from './pages/admin/LoanDetail'
 import Repayments from './pages/admin/Repayments'
 import RulesConfig from './pages/admin/RulesConfig'
 import AuditLog from './pages/admin/AuditLog'
+import UserManagement from './pages/admin/UserManagement'
+import RecoveryWorkbench from './pages/admin/RecoveryWorkbench'
 import OrganizationWallets from './pages/admin/OrganizationWallets'
+// Credit Officer Portal
+import CreditLayout from './pages/credit/CreditLayout'
+import CreditDashboard from './pages/credit/CreditDashboard'
+import DisbursementQueue from './pages/credit/DisbursementQueue'
+import DisbursementCaseFile from './pages/credit/DisbursementCaseFile'
 import { useAuth } from './hooks/useAuth'
-import { AuthProvider } from './context/AuthContext'
+import { useCustomerAuth } from './hooks/useCustomerAuth'
 import './App.css'
 
 function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth()
+  const { isAuthenticated, loading, session } = useAuth()
 
-  if (loading) {
-    return <div className="loading">Loading...</div>
+  if (loading) return <div className="loading">Loading...</div>
+  if (!isAuthenticated) return <Navigate to="/admin" replace />
+  // Redirect credit officers away from /admin to their own portal
+  if (session?.role === 'credit_officer') return <Navigate to="/credit/dashboard" replace />
+  return children
+}
+
+function ProtectedCreditRoute({ children }) {
+  const { isAuthenticated, loading, session } = useAuth()
+
+  if (loading) return <div className="loading">Loading...</div>
+  if (!isAuthenticated) return <Navigate to="/admin" replace />
+  if (session?.role !== 'credit_officer' && session?.role !== 'admin') {
+    return <Navigate to="/admin/dashboard" replace />
   }
+  return children
+}
 
-  return isAuthenticated ? children : <Navigate to="/admin" replace />
+function ProtectedCustomerRoute({ children }) {
+  const { isAuthenticated, loading } = useCustomerAuth()
+  if (loading) return <div className="loading">Loading...</div>
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  return children
 }
 
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/how-it-works" element={<HowItWorks />} />
-          <Route path="/partners" element={<Navigate to="/" replace />} />
-          <Route path="/apply" element={<Apply />} />
-          <Route path="/resume" element={<ResumeApplication />} />
-          <Route path="/eligibility" element={<EligibilityCheck />} />
-          <Route path="/track" element={<Track />} />
-          <Route path="/offer/:applicationId" element={<Offer />} />
-          <Route path="/calculator" element={<Calculator />} />
-          <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/make-payment" element={<MakePayment />} />
-          <Route path="/payment-confirmation" element={<PaymentConfirmation />} />
-          <Route path="/faq" element={<FAQ />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/admin" element={<AdminLogin />} />
-          <Route
-            path="/admin/*"
-            element={
-              <ProtectedRoute>
-                <AdminLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="applications" element={<Applications />} />
-            <Route path="applications/:id" element={<ApplicationDetail />} />
-            <Route path="loans" element={<ActiveLoans />} />
-            <Route path="repayments" element={<Repayments />} />
-            <Route path="wallets" element={<OrganizationWallets />} />
-            <Route path="rules" element={<RulesConfig />} />
-            <Route path="audit" element={<AuditLog />} />
-          </Route>
-        </Routes>
-      </AuthProvider>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/how-it-works" element={<HowItWorks />} />
+        <Route path="/partners" element={<Navigate to="/" replace />} />
+        <Route path="/apply" element={<Apply />} />
+        <Route path="/welcome" element={<Welcome />} />
+        <Route path="/resume" element={<ResumeApplication />} />
+        <Route path="/eligibility" element={<EligibilityCheck />} />
+        <Route path="/track" element={<Track />} />
+        <Route path="/login" element={<CustomerLogin />} />
+        <Route path="/portal" element={<ProtectedCustomerRoute><CustomerLayout /></ProtectedCustomerRoute>}>
+          <Route index element={<CustomerOverview />} />
+          <Route path="loans" element={<CustomerLoans />} />
+          <Route path="loans/:id" element={<CustomerLoanDetail />} />
+        </Route>
+        <Route path="/offer/:applicationId" element={<Offer />} />
+        <Route path="/calculator" element={<Calculator />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/make-payment" element={<MakePayment />} />
+        <Route path="/payment-confirmation" element={<PaymentConfirmation />} />
+        <Route path="/faq" element={<FAQ />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/admin" element={<AdminLogin />} />
+        <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="applications" element={<Applications />} />
+          <Route path="applications/:id" element={<ApplicationDetail />} />
+          <Route path="loans" element={<ActiveLoans />} />
+          <Route path="loans/:id" element={<LoanDetail />} />
+          <Route path="repayments" element={<Repayments />} />
+          <Route path="wallets" element={<OrganizationWallets />} />
+          <Route path="rules" element={<RulesConfig />} />
+          <Route path="audit" element={<AuditLog />} />
+          <Route path="users" element={<UserManagement />} />
+          <Route path="recovery" element={<RecoveryWorkbench />} />
+          <Route path="disbursements" element={<DisbursementQueue />} />
+          <Route path="disbursements/:id" element={<DisbursementCaseFile />} />
+        </Route>
+        {/* Credit Officer Portal */}
+        <Route path="/credit" element={<ProtectedCreditRoute><CreditLayout /></ProtectedCreditRoute>}>
+          <Route path="dashboard" element={<CreditDashboard />} />
+          <Route path="loans" element={<ActiveLoans />} />
+          <Route path="loans/:id" element={<LoanDetail />} />
+          <Route path="repayments" element={<Repayments />} />
+          <Route path="disbursements" element={<DisbursementQueue />} />
+          <Route path="disbursements/:id" element={<DisbursementCaseFile />} />
+        </Route>
+      </Routes>
     </BrowserRouter>
   )
 }

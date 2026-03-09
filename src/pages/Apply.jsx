@@ -145,10 +145,13 @@ export default function Apply() {
     coBorrowerEmployerName: '',
     coBorrowerMonthlyIncome: '',
 
+    // Identity & media
+    applicantPhoto: null,
+    documents: {},
+
     consentDataProcessing: false,
     consentTerms: false,
     consentMarketing: false,
-    documents: {},
   })
 
   // Hook for affordability & risk
@@ -483,6 +486,56 @@ export default function Apply() {
                 )}
                 {errors.id_document && <span className="input-error">{errors.id_document}</span>}
               </div>
+
+              <div style={{ gridColumn: '1 / -1', marginTop: '1rem' }}>
+                <label className="input-label">Applicant photo (selfie)</label>
+                <p className="caption" style={{ marginTop: '0.25rem' }}>
+                  A clear photo of the applicant&apos;s face. This is used for identity verification and will show in the admin case file.
+                </p>
+                {formData.applicantPhoto?.dataUrl ? (
+                  <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <img
+                      src={formData.applicantPhoto.dataUrl}
+                      alt="Applicant"
+                      style={{ width: 72, height: 72, borderRadius: '999px', objectFit: 'cover', border: '2px solid var(--color-primary-subtle)' }}
+                    />
+                    <div>
+                      <div className="text-sm font-medium">{formData.applicantPhoto.fileName}</div>
+                      <button
+                        type="button"
+                        className="button button--ghost text-xs mt-1"
+                        onClick={() => setFormData(prev => ({ ...prev, applicantPhoto: null }))}
+                      >
+                        Remove photo
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="document-upload-input"
+                    style={{ marginTop: '0.5rem', display: 'block' }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      const reader = new FileReader()
+                      reader.onloadend = () => {
+                        const dataUrl = reader.result
+                        setFormData(prev => ({
+                          ...prev,
+                          applicantPhoto: {
+                            fileName: file.name,
+                            fileSize: file.size,
+                            dataUrl,
+                          },
+                        }))
+                      }
+                      reader.readAsDataURL(file)
+                    }}
+                  />
+                )}
+              </div>
             </div>
           </div>
         )
@@ -675,16 +728,32 @@ export default function Apply() {
       <>
         <Header />
         <main>
-          <section className="section">
+          <section className="section section-welcome">
             <div className="container">
-              <div className="success-message">
-                <h2>Application Submitted Successfully!</h2>
-                <p>Your application ID is: <strong>{loanId}</strong></p>
-                <p>We'll review your application and get back to you within 24-48 hours via SMS or email.</p>
-                <div className="success-actions">
-                  <Button variant="primary" onClick={() => navigate(`/track?loanId=${loanId}`)}>Track Your Application</Button>
-                  <Button variant="ghost" onClick={() => navigate('/')}>Return Home</Button>
+              <div className="customer-welcome-card">
+                <div className="customer-welcome-icon" aria-hidden="true">✓</div>
+                <h1 className="customer-welcome-title">Welcome to Carecova</h1>
+                <p className="customer-welcome-lead">Your healthcare financing application has been submitted. We’re here to support you through the process.</p>
+                <div className="customer-welcome-id-box">
+                  <span className="customer-welcome-id-label">Your application ID</span>
+                  <strong className="customer-welcome-id-value">{loanId ?? '—'}</strong>
+                  <p className="customer-welcome-id-hint">Save this ID to track your application. We’ll also send it to you via SMS and email.</p>
                 </div>
+                <div className="customer-welcome-next">
+                  <h3>What happens next?</h3>
+                  <ul>
+                    <li><strong>Review</strong> – Our team will review your application (usually within 24–48 hours).</li>
+                    <li><strong>Contact</strong> – We may call or email if we need any documents or details.</li>
+                    <li><strong>Decision</strong> – You’ll receive an update and, if approved, your loan offer.</li>
+                    <li><strong>Disbursement</strong> – Once you accept, funds go to your healthcare provider.</li>
+                  </ul>
+                </div>
+                <div className="success-actions customer-welcome-actions">
+                  <Button variant="primary" onClick={() => navigate(`/track?loanId=${loanId || ''}`)} disabled={!loanId}>Track your application</Button>
+                  <Button variant="ghost" onClick={() => navigate('/login')}>Sign in to my account</Button>
+                  <Button variant="ghost" onClick={() => navigate('/')}>Return home</Button>
+                </div>
+                <p className="customer-welcome-portal-hint">Use the same phone number from this application to sign in and see all your loans in one place.</p>
               </div>
             </div>
           </section>
