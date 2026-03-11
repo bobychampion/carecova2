@@ -134,6 +134,11 @@ function normalizeLoanFromApi(loan) {
   }
 }
 
+/** Backend expects MongoDB ObjectId (24 hex). Skip API for frontend ids like LN-100007. */
+function looksLikeBackendId(id) {
+  return typeof id === 'string' && id.trim() !== 'undefined' && /^[a-fA-F0-9]{24}$/.test(id.trim())
+}
+
 export const adminService = {
   login: async (username, password) => {
     if (USE_BACKEND) {
@@ -249,16 +254,19 @@ export const adminService = {
   },
 
   getLoanById: async (loanId) => {
+    const trimmed = loanId?.trim()
+    if (!trimmed || trimmed === 'undefined') throw new Error('Application not found')
+
     const session = getStoredSession()
-    if (USE_BACKEND && session?.accessToken) {
+    if (USE_BACKEND && session?.accessToken && looksLikeBackendId(trimmed)) {
       try {
-        const loan = await adminRequest(`/admin/loan-applications/${loanId}`)
+        const loan = await adminRequest(`/admin/loan-applications/${trimmed}`)
         const normalized = normalizeLoanFromApi(loan)
-        const local = await loanService.getApplication(loanId).catch(() => null)
+        const local = await loanService.getApplication(trimmed).catch(() => null)
         return local ? { ...normalized, ...local } : normalized
       } catch (_) {}
     }
-    return loanService.getApplication(loanId)
+    return loanService.getApplication(trimmed)
   },
 
   initiateMonoConnectForLoan: async () => {

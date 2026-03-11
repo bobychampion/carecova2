@@ -28,6 +28,11 @@ export default function ApplicationDetail() {
     const [monoFeedbackError, setMonoFeedbackError] = useState('')
 
     const loadLoanDetails = async ({ silent = false } = {}) => {
+        if (!id || id.trim() === '' || id === 'undefined') {
+            setError('Application not found')
+            setLoading(false)
+            return
+        }
         try {
             if (!silent) setLoading(true)
             const found = await adminService.getLoanById(id)
@@ -46,7 +51,11 @@ export default function ApplicationDetail() {
     }
 
     useEffect(() => {
-        // Slight delay to simulate network
+        if (!id || id === 'undefined') {
+            setLoading(false)
+            setError('Application not found')
+            return
+        }
         const timer = setTimeout(() => {
             loadLoanDetails()
         }, 300)
