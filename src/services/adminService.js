@@ -189,11 +189,6 @@ function normalizeLoanFromApi(loan) {
   }
 }
 
-/** Backend expects MongoDB ObjectId (24 hex). Skip API for frontend ids like LN-100007. */
-function looksLikeBackendId(id) {
-  return typeof id === 'string' && id.trim() !== 'undefined' && /^[a-fA-F0-9]{24}$/.test(id.trim())
-}
-
 export const adminService = {
   login: async (username, password) => {
     if (USE_BACKEND) {

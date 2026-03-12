@@ -56,11 +56,6 @@ const upsertLoan = (loan) => {
 
 const findLocalLoan = (id) => getLoans().find((loan) => loan.id === id)
 
-/** Backend (MongoDB) expects 24-char hex ObjectId; frontend uses LN-xxxxx. Only call API for ObjectId-shaped ids. */
-function looksLikeBackendId(id) {
-  return typeof id === 'string' && /^[a-fA-F0-9]{24}$/.test(id.trim())
-}
-
 function generateLoanId() {
   const n = Math.floor(Date.now() / 1000) % 1000000
   return `LN-${String(n).padStart(6, '0')}`
