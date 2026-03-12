@@ -319,7 +319,7 @@ export const loanService = {
           applicationData.fullName || name
         )
         normalized.customerId = customer.id
-        upsertLoan(normalized)
+        if (!USE_BACKEND) upsertLoan(normalized)
         return normalized
       } catch (err) {
         throw err
@@ -413,31 +413,13 @@ export const loanService = {
     const trimmed = id?.trim()
     if (!trimmed || trimmed === 'undefined') throw new Error('Application not found')
 
-    const localLoan = findLocalLoan(trimmed)
-
     if (USE_BACKEND && looksLikeBackendId(trimmed)) {
-      try {
-        const remote = await request(`/loan-applications/${trimmed}`)
-        const normalizedRemote = normalizeLoan(remote)
-        const merged = localLoan
-          ? {
-              ...normalizedRemote,
-              offerAcceptedAt: localLoan.offerAcceptedAt,
-              repaymentSchedule: localLoan.repaymentSchedule || normalizedRemote.repaymentSchedule,
-              totalRepayment: localLoan.totalRepayment || normalizedRemote.totalRepayment,
-              monthlyInstallment: localLoan.monthlyInstallment || normalizedRemote.monthlyInstallment,
-              outstandingBalance: localLoan.outstandingBalance || normalizedRemote.outstandingBalance,
-              totalPaid: localLoan.totalPaid || normalizedRemote.totalPaid,
-            }
-          : normalizedRemote
-        upsertLoan(merged)
-        return merged
-      } catch (error) {
-        if (localLoan) return localLoan
-        throw error
-      }
+      const remote = await request(`/loan-applications/${trimmed}`)
+      return normalizeLoan(remote)
     }
+    if (USE_BACKEND) throw new Error('Application not found')
 
+    const localLoan = findLocalLoan(trimmed)
     if (!localLoan) throw new Error('Application not found')
     return localLoan
   },

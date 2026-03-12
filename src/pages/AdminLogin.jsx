@@ -44,10 +44,11 @@ export default function AdminLogin() {
         <form onSubmit={handleSubmit} className="login-form">
           {error && <div className="error-message">{error}</div>}
           <Input
-            label="Username"
+            label="Username or email"
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
+            placeholder="e.g. superadmin or superadmin@carecova.com"
             required
             autoFocus
           />
@@ -63,7 +64,7 @@ export default function AdminLogin() {
           </Button>
         </form>
         <div className="login-note">
-          <p>Use your backend admin credentials</p>
+          <p>Use your backend admin credentials. If login fails, try your email instead of username, or confirm the password (min 8 characters).</p>
         </div>
       </div>
     </div>

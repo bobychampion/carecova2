@@ -28,7 +28,7 @@ const FAQ: React.FC = () => {
         <div className="mt-16 bg-blue-600 rounded-[2.5rem] p-10 text-white text-center">
           <h2 className="text-2xl font-bold mb-4">Still have questions?</h2>
           <p className="text-blue-100 mb-8">Our support team is here to help you navigate your healthcare journey.</p>
-          <a href="mailto:support@sosocare.com" className="inline-block bg-white text-blue-600 px-8 py-4 rounded-full font-black hover:bg-slate-50 transition-colors">
+          <a href="mailto:support@carecova.com" className="inline-block bg-white text-blue-600 px-8 py-4 rounded-full font-black hover:bg-slate-50 transition-colors">
             Contact Support
           </a>
         </div>

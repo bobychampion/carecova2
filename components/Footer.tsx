@@ -55,9 +55,9 @@ const Footer: React.FC = () => {
             <h4 className="font-bold text-lg mb-8 text-white">Get in Touch</h4>
             <ul className="space-y-4 text-slate-400 text-sm font-medium">
               <li>
-                <a href="mailto:support@sosocare.com" className="hover:text-blue-400 transition-colors flex items-center gap-3">
+                <a href="mailto:support@carecova.com" className="hover:text-blue-400 transition-colors flex items-center gap-3">
                   <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                  support@sosocare.com
+                  support@carecova.com
                 </a>
               </li>
               <li>
@@ -74,7 +74,7 @@ const Footer: React.FC = () => {
           </div>
         </div>
         <div className="border-t border-slate-800 mt-20 pt-8 flex flex-col md:flex-row justify-between items-center gap-6">
-          <p className="text-slate-500 text-sm font-medium">© 2024 Sosocare. Built for your health.</p>
+          <p className="text-slate-500 text-sm font-medium">© 2024 CareCova. Built for your health.</p>
           <div className="flex gap-10 text-sm text-slate-500 font-medium">
             <a href="#" className="hover:text-white transition-colors">Privacy</a>
             <a href="#" className="hover:text-white transition-colors">Terms</a>

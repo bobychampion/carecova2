@@ -96,9 +96,56 @@ function getResponseMessage(body, isJson, fallback = 'Request failed') {
   return (isJson && (Array.isArray(body?.message) ? body.message.join(', ') : body?.message)) || (typeof body === 'string' ? body : fallback)
 }
 
-async function adminRequest(path, options = {}) {
+/** Map Care Cova API roles to frontend role (sidebar, permissions). */
+function mapBackendRole(backendRole) {
+  const map = {
+    super_admin: 'admin',
+    credit_admin: 'credit_officer',
+    reviewer: 'admin',
+    sales: 'sales',
+    customer_service: 'support',
+  }
+  return (backendRole && map[backendRole]) || backendRole || 'admin'
+}
+
+let refreshPromise = null
+async function refreshAccessToken() {
+  if (refreshPromise) return refreshPromise
   const session = getStoredSession()
-  const token = session?.accessToken
+  if (!session?.refreshToken) {
+    clearSession()
+    throw new Error('Session expired. Please sign in again.')
+  }
+  refreshPromise = (async () => {
+    const response = await fetch(`${API_ROOT}/admins/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken: session.refreshToken }),
+    })
+    const { isJson, body } = await parseResponseBody(response)
+    if (!response.ok) {
+      clearSession()
+      throw new Error(getResponseMessage(body, isJson, 'Session expired. Please sign in again.'))
+    }
+    const next = {
+      ...session,
+      accessToken: body.accessToken,
+      refreshToken: body.refreshToken || session.refreshToken,
+      admin: body.admin || session.admin,
+    }
+    saveSession(next)
+    return next.accessToken
+  })()
+  try {
+    return await refreshPromise
+  } finally {
+    refreshPromise = null
+  }
+}
+
+async function adminRequest(path, options = {}, retried = false) {
+  const session = getStoredSession()
+  let token = session?.accessToken
   if (!token) throw new Error('Not authenticated')
 
   const response = await fetch(`${API_ROOT}${path}`, {
@@ -112,6 +159,14 @@ async function adminRequest(path, options = {}) {
 
   const { isJson, body } = await parseResponseBody(response)
   if (!response.ok) {
+    if (response.status === 401 && !retried && session?.refreshToken) {
+      try {
+        token = await refreshAccessToken()
+        return adminRequest(path, options, true)
+      } catch (_) {
+        throw new Error('Session expired. Please sign in again.')
+      }
+    }
     if (response.status === 401) {
       clearSession()
       throw new Error('Session expired. Please sign in again.')
@@ -152,23 +207,23 @@ export const adminService = {
         if (!response.ok) throw new Error(getResponseMessage(body, isJson, 'Invalid credentials'))
 
         const admin = body.admin || {}
+        const role = mapBackendRole(admin.role)
+        const name = admin.displayName || admin.name || admin.username || username
         const session = {
           loggedIn: true,
           loginTime: new Date().toISOString(),
           accessToken: body.accessToken,
           refreshToken: body.refreshToken,
-          admin,
+          admin: { ...admin, role, displayName: admin.displayName || name },
           username: admin.username || username,
-          role: admin.role || 'admin',
-          name: admin.name || admin.username || username,
+          role,
+          name,
         }
         saveSession(session)
-        auditService.record('login', { adminName: session.name, role: session.role })
-        return { username: session.username, role: session.role, name: session.name, loggedIn: true, loginTime: session.loginTime }
+        auditService.record('login', { adminName: name, role })
+        return { username: session.username, role, name, loggedIn: true, loginTime: session.loginTime }
       } catch (err) {
-        if (err.message?.includes('credentials') || err.message?.includes('401') || err.message?.includes('Failed to fetch')) {
-          throw err
-        }
+        throw err
       }
     }
 
@@ -219,11 +274,11 @@ export const adminService = {
   getSession: () => {
     const s = getStoredSession()
     if (!s) return null
-    if (s.username !== undefined) return s
+    if (s.username !== undefined && !s.accessToken) return s
     return {
       username: s.admin?.username ?? s.username,
-      role: s.admin?.role ?? 'admin',
-      name: s.admin?.name ?? s.admin?.username ?? 'Admin',
+      role: mapBackendRole(s.admin?.role),
+      name: s.admin?.displayName ?? s.admin?.name ?? s.admin?.username ?? 'Admin',
       loggedIn: s.loggedIn,
       loginTime: s.loginTime,
     }
@@ -238,17 +293,9 @@ export const adminService = {
   getAllLoans: async () => {
     const session = getStoredSession()
     if (USE_BACKEND && session?.accessToken) {
-      try {
-        const list = await adminRequest('/admin/loan-applications')
-        const loans = (Array.isArray(list) ? list : list?.content ?? list?.data ?? []).map(normalizeLoanFromApi)
-        const local = await loanService.getAllApplications()
-        const merged = loans.map((b) => {
-          const loc = local.find((l) => l.id === b.id)
-          return loc ? { ...b, ...loc } : b
-        })
-        const localOnly = local.filter((l) => !loans.some((b) => b.id === l.id))
-        return [...merged, ...localOnly]
-      } catch (_) {}
+      const list = await adminRequest('/admin/loan-applications')
+      const loans = (Array.isArray(list) ? list : list?.content ?? list?.data ?? list?.items ?? []).map(normalizeLoanFromApi)
+      return loans
     }
     return loanService.getAllApplications()
   },
@@ -258,13 +305,10 @@ export const adminService = {
     if (!trimmed || trimmed === 'undefined') throw new Error('Application not found')
 
     const session = getStoredSession()
-    if (USE_BACKEND && session?.accessToken && looksLikeBackendId(trimmed)) {
-      try {
-        const loan = await adminRequest(`/admin/loan-applications/${trimmed}`)
-        const normalized = normalizeLoanFromApi(loan)
-        const local = await loanService.getApplication(trimmed).catch(() => null)
-        return local ? { ...normalized, ...local } : normalized
-      } catch (_) {}
+    if (USE_BACKEND && session?.accessToken) {
+      if (!looksLikeBackendId(trimmed)) throw new Error('Application not found')
+      const loan = await adminRequest(`/admin/loan-applications/${trimmed}`)
+      return normalizeLoanFromApi(loan)
     }
     return loanService.getApplication(trimmed)
   },

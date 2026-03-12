@@ -20,13 +20,13 @@ export default function Footer() {
         </div>
         <div className="footer-column">
           <h4>Contact</h4>
-          <p>support@sosocare.com</p>
+          <p>support@carecova.com</p>
           <p>(+234) 816 347 1359</p>
           <p>15 Rumuola Road, Port Harcourt, Nigeria</p>
         </div>
       </div>
       <div className="container footer-bottom">
-        <span>© 2024 Sosocare. All rights reserved.</span>
+        <span>© 2024 CareCova. All rights reserved.</span>
         <div className="footer-links">
           <Link to="/">Privacy Policy</Link>
           <Link to="/">Terms of Service</Link>

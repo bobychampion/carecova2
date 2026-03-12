@@ -39,7 +39,7 @@ const Header: React.FC = () => {
               </div>
               <div className="flex flex-col">
                 <span className="text-2xl font-extrabold text-slate-900 tracking-tight leading-none">CareCova</span>
-                <span className="text-[10px] text-blue-600 font-bold tracking-[0.2em] uppercase mt-1">Sosocare Healthcare</span>
+                <span className="text-[10px] text-blue-600 font-bold tracking-[0.2em] uppercase mt-1">CareCova Healthcare</span>
               </div>
             </Link>
           </div>
