@@ -8,11 +8,18 @@ import * as commissionService from './commissionService'
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
 const API_ROOT = API_BASE_URL ? `${API_BASE_URL}/api` : ''
 const USE_BACKEND = !!API_BASE_URL
+const BACKEND_ID_REGEX = /^[a-f0-9]{24}$/i
 
 const ADMIN_STORAGE_KEY = 'carecova_admin_session'
 const USERS_STORAGE_KEY = 'carecova_admin_users'
 const TRANSACTIONS_STORAGE_KEY = 'carecova_transactions'
 const WALLET_STORAGE_KEY = 'carecova_org_wallet'
+
+function looksLikeBackendId(value) {
+  if (typeof value !== 'string') return false
+  const normalized = value.trim()
+  return BACKEND_ID_REGEX.test(normalized)
+}
 
 const INITIAL_USERS = {
   'admin': { username: 'admin', password: 'admin123', role: 'admin', name: 'Super Admin', status: 'active' },
@@ -189,6 +196,23 @@ function normalizeLoanFromApi(loan) {
   }
 }
 
+function requireBackendFeature(featureName) {
+  if (!USE_BACKEND) {
+    throw new Error(`${featureName} requires a configured backend API`)
+  }
+}
+
+function assertBackendLoanId(loanId, featureName) {
+  const trimmed = loanId?.trim()
+  if (!trimmed || trimmed === 'undefined') {
+    throw new Error('Application not found')
+  }
+  if (!looksLikeBackendId(trimmed)) {
+    throw new Error(`${featureName} requires a backend application id`)
+  }
+  return trimmed
+}
+
 export const adminService = {
   login: async (username, password) => {
     if (USE_BACKEND) {
@@ -308,12 +332,22 @@ export const adminService = {
     return loanService.getApplication(trimmed)
   },
 
-  initiateMonoConnectForLoan: async () => {
-    throw new Error('Mono connect not configured for local mode')
+  initiateMonoConnectForLoan: async (loanId, payload = {}) => {
+    requireBackendFeature('Mono connect')
+    const trimmed = assertBackendLoanId(loanId, 'Mono connect')
+    return adminRequest(`/admin/loan-applications/${trimmed}/mono/connect/initiate`, {
+      method: 'POST',
+      body: JSON.stringify(payload || {}),
+    })
   },
 
-  getMonoInformedDecisionForLoan: async () => {
-    throw new Error('Mono informed decision not configured for local mode')
+  getMonoInformedDecisionForLoan: async (loanId, payload = {}) => {
+    requireBackendFeature('Mono informed decision')
+    const trimmed = assertBackendLoanId(loanId, 'Mono informed decision')
+    return adminRequest(`/admin/loan-applications/${trimmed}/mono/informed-decision`, {
+      method: 'POST',
+      body: JSON.stringify(payload || {}),
+    })
   },
 
   getWallets: async () => [],
@@ -323,8 +357,20 @@ export const adminService = {
   fundWallet: async () => {},
   fundOrganizationWallet: async () => {},
 
-  getMonoInformedDecisionSectionForLoan: async () => {
-    throw new Error('Mono informed decision section not configured for local mode')
+  getMonoInformedDecisionSectionForLoan: async (loanId, section, payload = {}) => {
+    requireBackendFeature('Mono informed decision section')
+    const trimmed = assertBackendLoanId(loanId, 'Mono informed decision section')
+    const normalizedSection = String(section || '').trim()
+    if (!normalizedSection) {
+      throw new Error('Mono informed decision section is required')
+    }
+    return adminRequest(
+      `/admin/loan-applications/${trimmed}/mono/informed-decision/sections/${encodeURIComponent(normalizedSection)}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload || {}),
+      },
+    )
   },
 
   // Dashboard KPIs

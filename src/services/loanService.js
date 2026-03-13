@@ -7,8 +7,15 @@ const STORAGE_KEY = 'carecova_loans'
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
 const API_ROOT = API_BASE_URL ? `${API_BASE_URL}/api` : ''
 const USE_BACKEND = !!API_BASE_URL
+const BACKEND_ID_REGEX = /^[a-f0-9]{24}$/i
 
 const TENOR_TO_MONTHS = { '1': 1, '2': 2, '3-4': 4, '6': 6 }
+
+function looksLikeBackendId(value) {
+  if (typeof value !== 'string') return false
+  const normalized = value.trim()
+  return BACKEND_ID_REGEX.test(normalized)
+}
 
 const getLoans = () => {
   try {
