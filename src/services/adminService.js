@@ -1797,8 +1797,8 @@ export const adminService = {
   assignProviderToLoan: async (loanId, providerId) => {
     requireBackendFeature('Assign provider')
     const trimmed = assertBackendLoanId(loanId, 'Assign provider')
-    return adminRequest(`/admin/loan-applications/${encodeURIComponent(trimmed)}`, {
-      method: 'PATCH',
+    return adminRequest(`/admin/loan-applications/${encodeURIComponent(trimmed)}/assign-provider`, {
+      method: 'POST',
       body: JSON.stringify({ providerId }),
     })
   },
