@@ -1,0 +1,220 @@
+import { useState, useEffect } from 'react'
+import { Send, RefreshCw, CheckCircle, XCircle, Clock, AlertCircle, Building2 } from 'lucide-react'
+import { adminService } from '../../../services/adminService'
+
+const fmt = (n) => n != null ? `₦${Number(n).toLocaleString()}` : '—'
+const fmtDate = (d) => d ? new Date(d).toLocaleString('en-NG', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'
+
+function DecisionBadge({ status }) {
+  const map = {
+    approved: { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0', label: 'Approved', icon: <CheckCircle size={13} /> },
+    declined: { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', label: 'Declined', icon: <XCircle size={13} /> },
+    manual_review: { bg: '#fffbeb', color: '#d97706', border: '#fde68a', label: 'Manual Review', icon: <AlertCircle size={13} /> },
+  }
+  const s = map[status] || { bg: '#f9fafb', color: '#6b7280', border: '#e5e7eb', label: status || 'Unknown', icon: <Clock size={13} /> }
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 10px', borderRadius: '999px', fontSize: '0.8125rem', fontWeight: 600, background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
+      {s.icon} {s.label}
+    </span>
+  )
+}
+
+function DisbursementBadge({ status }) {
+  if (!status) return null
+  const map = {
+    confirmed: { bg: '#f0fdf4', color: '#16a34a', label: 'Disbursed' },
+    failed: { bg: '#fef2f2', color: '#dc2626', label: 'Disbursement Failed' },
+    pending: { bg: '#eff6ff', color: '#2563eb', label: 'Pending Disbursement' },
+  }
+  const s = map[status] || { bg: '#f9fafb', color: '#6b7280', label: status }
+  return (
+    <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '999px', fontSize: '0.8125rem', fontWeight: 600, background: s.bg, color: s.color }}>
+      {s.label}
+    </span>
+  )
+}
+
+function InfoRow({ label, value }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
+      <span style={{ fontSize: '0.8125rem', color: '#6b7280', minWidth: '160px' }}>{label}</span>
+      <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#111827', textAlign: 'right' }}>{value ?? '—'}</span>
+    </div>
+  )
+}
+
+export default function P2VestCard({ loan, onUpdated }) {
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [providers, setProviders] = useState([])
+  const [selectedProvider, setSelectedProvider] = useState('')
+  const [assigning, setAssigning] = useState(false)
+
+  const decision = loan?.p2vestDecision
+  const hasDecision = !!decision?.decisionStatus
+  const hasRequestId = !!loan?.p2vestRequestId
+  const disbursementStatus = loan?.disbursementStatus
+  const linkedProvider = loan?.providerName || loan?.provider?.name
+
+  useEffect(() => {
+    adminService.getProviders().then(setProviders).catch(() => {})
+  }, [])
+
+  const handleSubmit = async () => {
+    setError('')
+    setSuccess('')
+    setSubmitting(true)
+    try {
+      await adminService.submitP2VestReview(loan.id)
+      setSuccess('Application submitted to P2Vest. The credit decision will appear here shortly.')
+      onUpdated?.()
+    } catch (err) {
+      setError(err.message || 'Failed to submit to P2Vest')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleAssignProvider = async () => {
+    if (!selectedProvider) return
+    setAssigning(true)
+    setError('')
+    try {
+      await adminService.assignProviderToLoan(loan.id, selectedProvider)
+      setSuccess('Hospital linked successfully.')
+      setSelectedProvider('')
+      onUpdated?.()
+    } catch (err) {
+      setError(err.message || 'Failed to link hospital')
+    } finally {
+      setAssigning(false)
+    }
+  }
+
+  return (
+    <div className="detail-card">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: '0.9375rem', fontWeight: 700, color: '#111827' }}>P2Vest Credit Review</h3>
+          <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#9ca3af' }}>Powered by P2Vest credit decisioning</p>
+        </div>
+        {hasDecision && <DecisionBadge status={decision.decisionStatus} />}
+      </div>
+
+      {/* Hospital link section */}
+      <div style={{ padding: '12px 14px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+          <Building2 size={14} color="#6b7280" />
+          <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151' }}>Linked Hospital</span>
+        </div>
+        {linkedProvider ? (
+          <p style={{ margin: 0, fontSize: '0.875rem', color: '#111827', fontWeight: 500 }}>{linkedProvider}</p>
+        ) : (
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <select
+              value={selectedProvider}
+              onChange={(e) => setSelectedProvider(e.target.value)}
+              style={{ flex: 1, padding: '7px 10px', borderRadius: '7px', border: '1.5px solid #e2e8f0', fontSize: '0.8125rem', background: '#fff' }}
+            >
+              <option value="">Select hospital to link…</option>
+              {providers.map((p) => (
+                <option key={p.id || p._id} value={p.id || p._id}>
+                  {p.name}{p.accountNumber ? ' ✓ bank details' : ' ⚠ no bank details'}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleAssignProvider}
+              disabled={!selectedProvider || assigning}
+              style={{ padding: '7px 14px', borderRadius: '7px', border: 'none', background: '#2563eb', color: '#fff', fontSize: '0.8125rem', fontWeight: 600, cursor: selectedProvider ? 'pointer' : 'not-allowed', opacity: !selectedProvider ? 0.5 : 1, whiteSpace: 'nowrap' }}
+            >
+              {assigning ? 'Linking…' : 'Link'}
+            </button>
+          </div>
+        )}
+        {!linkedProvider && (
+          <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: '#d97706' }}>
+            ⚠ The hospital must be linked and must have bank account details configured before submitting to P2Vest.
+          </p>
+        )}
+      </div>
+
+      {/* Submission status */}
+      {!hasRequestId && (
+        <div style={{ padding: '14px', borderRadius: '8px', background: '#f9fafb', border: '1px dashed #d1d5db', textAlign: 'center', marginBottom: '16px' }}>
+          <Clock size={22} color="#9ca3af" style={{ marginBottom: '6px' }} />
+          <p style={{ margin: '0 0 4px', fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>Not yet submitted</p>
+          <p style={{ margin: 0, fontSize: '0.8125rem', color: '#9ca3af' }}>Submit this application to P2Vest to receive a credit decision.</p>
+        </div>
+      )}
+
+      {hasRequestId && !hasDecision && (
+        <div style={{ padding: '12px 14px', borderRadius: '8px', background: '#eff6ff', border: '1px solid #bfdbfe', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Clock size={16} color="#2563eb" />
+          <div>
+            <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, color: '#1d4ed8' }}>Submitted — awaiting decision</p>
+            <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#3b82f6' }}>Request ID: {loan.p2vestRequestId}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Decision details */}
+      {hasDecision && (
+        <div style={{ marginBottom: '16px' }}>
+          <InfoRow label="Decision Status" value={<DecisionBadge status={decision.decisionStatus} />} />
+          <InfoRow label="Credit Score" value={decision.creditScore ?? '—'} />
+          <InfoRow label="Risk Rating" value={decision.riskRating ?? '—'} />
+          <InfoRow label="Recommended Amount" value={fmt(decision.recommendedLoanAmount)} />
+          <InfoRow label="Recommended Tenure" value={decision.recommendedTenure ? `${decision.recommendedTenure} months` : '—'} />
+          <InfoRow label="Affordability Score" value={decision.affordabilityScore != null ? `${(decision.affordabilityScore * 100).toFixed(0)}%` : '—'} />
+          <InfoRow label="Confidence Score" value={decision.confidenceScore != null ? `${(decision.confidenceScore * 100).toFixed(0)}%` : '—'} />
+          <InfoRow label="Verification" value={decision.verificationStatus ?? '—'} />
+          <InfoRow label="P2Vest User ID" value={loan.p2vestUserId ?? '—'} />
+          <InfoRow label="Decided At" value={fmtDate(decision.decidedAt)} />
+          {decision.declineReasons?.length > 0 && (
+            <div style={{ padding: '10px 14px', borderRadius: '8px', background: '#fef2f2', border: '1px solid #fecaca', marginTop: '8px' }}>
+              <p style={{ margin: '0 0 6px', fontSize: '0.8125rem', fontWeight: 600, color: '#991b1b' }}>Decline Reasons</p>
+              <ul style={{ margin: 0, paddingLeft: '16px' }}>
+                {decision.declineReasons.map((r, i) => (
+                  <li key={i} style={{ fontSize: '0.8125rem', color: '#dc2626', marginBottom: '2px' }}>{r}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Disbursement status */}
+      {disbursementStatus && (
+        <div style={{ padding: '10px 14px', borderRadius: '8px', background: disbursementStatus === 'confirmed' ? '#f0fdf4' : '#fef2f2', border: `1px solid ${disbursementStatus === 'confirmed' ? '#bbf7d0' : '#fecaca'}`, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {disbursementStatus === 'confirmed' ? <CheckCircle size={16} color="#16a34a" /> : <XCircle size={16} color="#dc2626" />}
+          <div>
+            <DisbursementBadge status={disbursementStatus} />
+            {loan.disbursementConfirmedAt && <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#6b7280' }}>Confirmed: {fmtDate(loan.disbursementConfirmedAt)}</p>}
+            {loan.disbursementFailedAt && <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#6b7280' }}>Failed: {fmtDate(loan.disbursementFailedAt)}</p>}
+          </div>
+        </div>
+      )}
+
+      {error && <div style={{ padding: '10px 12px', borderRadius: '7px', background: '#fef2f2', border: '1px solid #fecaca', fontSize: '0.8125rem', color: '#dc2626', marginBottom: '12px' }}>{error}</div>}
+      {success && <div style={{ padding: '10px 12px', borderRadius: '7px', background: '#f0fdf4', border: '1px solid #bbf7d0', fontSize: '0.8125rem', color: '#16a34a', marginBottom: '12px' }}>{success}</div>}
+
+      {/* Submit / re-submit button */}
+      <button
+        onClick={handleSubmit}
+        disabled={submitting || !loan?.id}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '10px', borderRadius: '8px', border: 'none', background: submitting ? '#93c5fd' : 'linear-gradient(135deg,#2563eb,#1d4ed8)', color: '#fff', fontSize: '0.875rem', fontWeight: 600, cursor: submitting ? 'wait' : 'pointer' }}
+      >
+        {submitting ? <RefreshCw size={15} className="spin" /> : <Send size={15} />}
+        {hasRequestId ? 'Re-submit to P2Vest' : 'Submit to P2Vest'}
+      </button>
+
+      {hasRequestId && (
+        <p style={{ margin: '8px 0 0', fontSize: '0.75rem', color: '#9ca3af', textAlign: 'center' }}>
+          Request ID: {loan.p2vestRequestId}
+        </p>
+      )}
+    </div>
+  )
+}

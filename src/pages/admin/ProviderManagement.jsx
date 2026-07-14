@@ -11,6 +11,7 @@ const PROVIDER_TYPES = [
 
 const EMPTY_FORM = {
   name: '', type: 'hospital', email: '', phone: '', address: '',
+  accountName: '', accountNumber: '', bankCode: '',
 }
 
 export default function ProviderManagement() {
@@ -82,7 +83,10 @@ export default function ProviderManagement() {
         type: addForm.type,
         email: addForm.email.trim(),
         phone: addForm.phone.trim(),
-        ...(addForm.address.trim() ? { address: addForm.address.trim() } : {}),
+        ...(addForm.address?.trim() ? { address: addForm.address.trim() } : {}),
+        ...(addForm.accountName?.trim() ? { accountName: addForm.accountName.trim() } : {}),
+        ...(addForm.accountNumber?.trim() ? { accountNumber: addForm.accountNumber.trim() } : {}),
+        ...(addForm.bankCode?.trim() ? { bankCode: addForm.bankCode.trim() } : {}),
       })
       setAddSuccess(`Provider "${addForm.name}" created successfully!`)
       setAddForm(EMPTY_FORM)
@@ -98,7 +102,7 @@ export default function ProviderManagement() {
   // ── Edit ─────────────────────────────────────────────────────────────────────
   const openEdit = (p) => {
     setEditProvider(p)
-    setEditForm({ name: p.name || '', type: p.type || 'hospital', email: p.email || '', phone: p.phone || '', address: p.address || '' })
+    setEditForm({ name: p.name || '', type: p.type || 'hospital', email: p.email || '', phone: p.phone || '', address: p.address || '', accountName: p.accountName || '', accountNumber: p.accountNumber || '', bankCode: p.bankCode || '' })
     setEditError('')
     setEditSuccess('')
   }
@@ -117,6 +121,9 @@ export default function ProviderManagement() {
         email: editForm.email.trim(),
         phone: editForm.phone.trim(),
         address: editForm.address.trim(),
+        ...(editForm.accountName.trim() ? { accountName: editForm.accountName.trim() } : {}),
+        ...(editForm.accountNumber.trim() ? { accountNumber: editForm.accountNumber.trim() } : {}),
+        ...(editForm.bankCode.trim() ? { bankCode: editForm.bankCode.trim() } : {}),
       })
       setEditSuccess('Provider updated successfully!')
       await load()
@@ -327,6 +334,16 @@ export default function ProviderManagement() {
               <Field label="Address"><input value={addForm.address} onChange={(e) => setAddForm(f => ({ ...f, address: e.target.value }))} placeholder="123 Street, City, State" style={inputStyle} /></Field>
             </div>
 
+            <div style={{ borderTop: '1px solid #f3f4f6', marginBottom: '16px' }} />
+            <SectionLabel>Bank Account Details <span style={{ fontWeight: 400, color: '#9ca3af', textTransform: 'none', letterSpacing: 0 }}>(required for P2Vest disbursement)</span></SectionLabel>
+            <div style={{ display: 'grid', gap: '10px', marginBottom: '20px' }}>
+              <Field label="Account Name"><input value={addForm.accountName || ''} onChange={(e) => setAddForm(f => ({ ...f, accountName: e.target.value }))} placeholder="e.g. Lagos General Hospital" style={inputStyle} /></Field>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <Field label="Account Number"><input value={addForm.accountNumber || ''} onChange={(e) => setAddForm(f => ({ ...f, accountNumber: e.target.value }))} placeholder="10-digit NUBAN" style={inputStyle} /></Field>
+                <Field label="Bank Code"><input value={addForm.bankCode || ''} onChange={(e) => setAddForm(f => ({ ...f, bankCode: e.target.value }))} placeholder="e.g. 058" style={inputStyle} /></Field>
+              </div>
+            </div>
+
             <div style={{ borderTop: '1px solid #f3f4f6', marginBottom: '20px' }} />
             <SectionLabel>Portal Login Password (optional)</SectionLabel>
             <div style={{ marginBottom: '20px' }}>
@@ -366,6 +383,16 @@ export default function ProviderManagement() {
               </div>
               <Field label="Email"><input type="email" value={editForm.email} onChange={(e) => setEditForm(f => ({ ...f, email: e.target.value }))} style={inputStyle} /></Field>
               <Field label="Address"><input value={editForm.address} onChange={(e) => setEditForm(f => ({ ...f, address: e.target.value }))} placeholder="Street, City, State" style={inputStyle} /></Field>
+              <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '14px' }}>
+                <p style={{ margin: '0 0 10px', fontSize: '0.8125rem', fontWeight: 600, color: '#374151' }}>Bank Account Details <span style={{ fontWeight: 400, color: '#9ca3af' }}>(required for P2Vest disbursement)</span></p>
+                <div style={{ display: 'grid', gap: '10px' }}>
+                  <Field label="Account Name"><input value={editForm.accountName} onChange={(e) => setEditForm(f => ({ ...f, accountName: e.target.value }))} placeholder="e.g. Lagos General Hospital" style={inputStyle} /></Field>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <Field label="Account Number"><input value={editForm.accountNumber} onChange={(e) => setEditForm(f => ({ ...f, accountNumber: e.target.value }))} placeholder="10-digit NUBAN" style={inputStyle} /></Field>
+                    <Field label="Bank Code"><input value={editForm.bankCode} onChange={(e) => setEditForm(f => ({ ...f, bankCode: e.target.value }))} placeholder="e.g. 058" style={inputStyle} /></Field>
+                  </div>
+                </div>
+              </div>
             </div>
             {editError && <div style={errorBox}>{editError}</div>}
             {editSuccess && <div style={successBox}>{editSuccess}</div>}

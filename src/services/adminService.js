@@ -27,6 +27,8 @@ const INITIAL_USERS = {
   'sales2': { username: 'sales2', password: 'sales2123', role: 'sales', name: 'Jane Sales', status: 'active' },
   'support': { username: 'support', password: 'support123', role: 'support', name: 'CS Support', status: 'active' },
   'credit1': { username: 'credit1', password: 'credit123', role: 'credit_officer', name: 'Credit Officer 1', status: 'active' },
+  'financier1': { username: 'financier1', password: 'financier123', role: 'financier', name: 'ABC Finance', status: 'active' },
+  'financier2': { username: 'financier2', password: 'financier123', role: 'financier', name: 'XYZ Capital', status: 'active' },
 }
 
 function getUsers() {
@@ -112,6 +114,8 @@ function mapBackendRole(backendRole) {
     sales: 'sales',
     customer_service: 'support',
     provider: 'provider',
+    financier: 'financier',
+    external_financier: 'financier',
   }
   return (backendRole && map[backendRole]) || backendRole || 'admin'
 }
@@ -1057,7 +1061,11 @@ export const adminService = {
         method: 'POST',
         body: JSON.stringify(payload),
       })
-      return normalizeLoanFromApi(updated)
+      const normalized = normalizeLoanFromApi(updated)
+      if (normalized && !normalized.financing_status) {
+        normalized.financing_status = 'available_for_financing'
+      }
+      return normalized
     }
 
     return new Promise(async (resolve, reject) => {
@@ -1094,6 +1102,8 @@ export const adminService = {
         if (terms.commissionOverrides) {
           loan.commissionOverrides = { ...(loan.commissionOverrides || {}), ...terms.commissionOverrides }
         }
+
+        loan.financing_status = 'available_for_financing'
 
         saveToStorage(loans)
         commissionService.createApprovalCommission(loan)
@@ -1773,6 +1783,14 @@ export const adminService = {
     return adminRequest(`/admin/providers/${encodeURIComponent(trimmed)}/reset-password`, {
       method: 'POST',
       body: JSON.stringify({ newPassword }),
+    })
+  },
+
+  submitP2VestReview: async (loanId) => {
+    requireBackendFeature('P2Vest credit review')
+    const trimmed = assertBackendLoanId(loanId, 'P2Vest review')
+    return adminRequest(`/partners/p2vest/loans/${encodeURIComponent(trimmed)}/review-request`, {
+      method: 'POST',
     })
   },
 

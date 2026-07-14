@@ -12,6 +12,7 @@ import VerificationRisk from '../../components/admin/ApplicationDetail/Verificat
 import DecisionPanel from '../../components/admin/ApplicationDetail/DecisionPanel'
 import SalesDataCollection from '../../components/admin/ApplicationDetail/SalesDataCollection'
 import DirectDebitCard from '../../components/admin/DirectDebitCard'
+import P2VestCard from '../../components/admin/ApplicationDetail/P2VestCard'
 import InlineLoader from '../../components/ui/InlineLoader'
 import Modal from '../../components/ui/Modal'
 
@@ -22,7 +23,7 @@ export default function ApplicationDetail() {
     const [loading, setLoading] = useState(true)
     const [loan, setLoan] = useState(null)
     const [error, setError] = useState(null)
-    const [activeTab, setActiveTab] = useState('review') // review | history
+    const [activeTab, setActiveTab] = useState('review') // review | credit | history
     const [monoInitiating, setMonoInitiating] = useState(false)
     const [monoRefreshing, setMonoRefreshing] = useState(false)
     const [monoFeedbackMessage, setMonoFeedbackMessage] = useState('')
@@ -191,7 +192,7 @@ export default function ApplicationDetail() {
                         <h1 className="mb-0">
                             {loan.fullName || loan.patientName || 'Applicant'}
                         </h1>
-                        <StatusBadge status={loan.status} />
+                        <StatusBadge status={loan.status} financingStatus={loan.financing_status} />
                         <span className="stage-pill">{getStageLabel(loan)}</span>
                     </div>
                     <p className="text-xs text-muted mt-1">Application ID: {loan.id}</p>
@@ -209,9 +210,46 @@ export default function ApplicationDetail() {
 
                 <div className="flex gap-2">
                     <button className={`tab-btn ${activeTab === 'review' ? 'active' : ''}`} onClick={() => setActiveTab('review')}>Review Details</button>
+                    <button className={`tab-btn ${activeTab === 'credit' ? 'active' : ''}`} onClick={() => setActiveTab('credit')}>Credit Review</button>
                     <button className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>Audit History</button>
                 </div>
-            </div>
+                </div>
+
+                {loan.financing_status && (
+                    <div className="detail-card mt-4" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                        <h3 style={{ margin: '0 0 8px', fontSize: '0.9rem', fontWeight: 600 }}>Financing Status Overview</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                            <div>
+                                <div className="text-xs text-muted">Status</div>
+                                <StatusBadge status={loan.status} financingStatus={loan.financing_status} />
+                            </div>
+                            {loan.reserved_by_financier_id && (
+                                <div>
+                                    <div className="text-xs text-muted">Reserved By</div>
+                                    <div className="text-sm font-medium">{loan.reserved_by_financier_id}</div>
+                                </div>
+                            )}
+                            {loan.reserved_at && (
+                                <div>
+                                    <div className="text-xs text-muted">Reserved On</div>
+                                    <div className="text-sm font-medium">{new Date(loan.reserved_at).toLocaleDateString()}</div>
+                                </div>
+                            )}
+                            {loan.financing_amount && (
+                                <div>
+                                    <div className="text-xs text-muted">Financing Amount</div>
+                                    <div className="text-sm font-medium">₦{loan.financing_amount.toLocaleString()}</div>
+                                </div>
+                            )}
+                            {loan.financed_at && (
+                                <div>
+                                    <div className="text-xs text-muted">Financed On</div>
+                                    <div className="text-sm font-medium">{new Date(loan.financed_at).toLocaleDateString()}</div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
 
             {activeTab === 'review' ? (
                 <div className="detail-layout-3col">
@@ -302,6 +340,13 @@ export default function ApplicationDetail() {
                             )}
                         </div>
                     )}
+                </div>
+            ) : activeTab === 'credit' ? (
+                <div style={{ maxWidth: '560px' }}>
+                    <P2VestCard
+                        loan={loan}
+                        onUpdated={() => loadLoanDetails({ silent: true })}
+                    />
                 </div>
             ) : (
                 <div className="detail-card full-width">
