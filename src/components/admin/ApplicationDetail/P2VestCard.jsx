@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Send, RefreshCw, CheckCircle, XCircle, Clock, AlertCircle, Building2 } from 'lucide-react'
+import { Send, RefreshCw, CheckCircle, XCircle, Clock, AlertCircle, Building2, Banknote } from 'lucide-react'
 import { adminService } from '../../../services/adminService'
 
 const fmt = (n) => n != null ? `₦${Number(n).toLocaleString()}` : '—'
@@ -45,6 +45,7 @@ function InfoRow({ label, value }) {
 
 export default function P2VestCard({ loan, onUpdated }) {
   const [submitting, setSubmitting] = useState(false)
+  const [accepting, setAccepting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [providers, setProviders] = useState([])
@@ -54,8 +55,11 @@ export default function P2VestCard({ loan, onUpdated }) {
   const decision = loan?.p2vestDecision
   const hasDecision = !!decision?.decisionStatus
   const hasRequestId = !!loan?.p2vestRequestId
+  const isApproved = decision?.decisionStatus === 'approved'
+  const isAccepted = !!loan?.p2vestLoanId
   const disbursementStatus = loan?.disbursementStatus
   const linkedProvider = loan?.providerName || loan?.provider?.name
+  const hasVirtualAccount = !!loan?.p2vestVirtualAccountNumber
 
   useEffect(() => {
     adminService.getProviders().then(setProviders).catch(() => {})
@@ -73,6 +77,21 @@ export default function P2VestCard({ loan, onUpdated }) {
       setError(err.message || 'Failed to submit to P2Vest')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleAccept = async () => {
+    setError('')
+    setSuccess('')
+    setAccepting(true)
+    try {
+      await adminService.acceptP2VestLoanOffer(loan.id)
+      setSuccess('Loan offer accepted. P2Vest will disburse funds to the hospital.')
+      onUpdated?.()
+    } catch (err) {
+      setError(err.message || 'Failed to accept loan offer')
+    } finally {
+      setAccepting(false)
     }
   }
 
@@ -185,7 +204,50 @@ export default function P2VestCard({ loan, onUpdated }) {
         </div>
       )}
 
-      {/* Disbursement status */}
+      {/* Accept loan offer — shown when approved but not yet accepted */}
+      {isApproved && !isAccepted && (
+        <div style={{ padding: '14px', borderRadius: '8px', background: '#f0fdf4', border: '1px solid #bbf7d0', marginBottom: '16px' }}>
+          <p style={{ margin: '0 0 4px', fontSize: '0.875rem', fontWeight: 600, color: '#15803d' }}>Ready to proceed</p>
+          <p style={{ margin: '0 0 12px', fontSize: '0.8125rem', color: '#166534' }}>
+            P2Vest has approved this application. Accept the loan offer to instruct P2Vest to disburse funds directly to the hospital.
+          </p>
+          <button
+            onClick={handleAccept}
+            disabled={accepting}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '10px', borderRadius: '8px', border: 'none', background: accepting ? '#86efac' : 'linear-gradient(135deg,#16a34a,#15803d)', color: '#fff', fontSize: '0.875rem', fontWeight: 600, cursor: accepting ? 'wait' : 'pointer' }}
+          >
+            {accepting ? <RefreshCw size={15} className="spin" /> : <CheckCircle size={15} />}
+            {accepting ? 'Accepting…' : 'Accept Loan Offer & Trigger Disbursement'}
+          </button>
+        </div>
+      )}
+
+      {/* Accepted — show loan ID and virtual account */}
+      {isAccepted && (
+        <div style={{ padding: '12px 14px', borderRadius: '8px', background: '#f0fdf4', border: '1px solid #bbf7d0', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+            <CheckCircle size={15} color="#16a34a" />
+            <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#15803d' }}>Loan Offer Accepted</span>
+          </div>
+          <InfoRow label="P2Vest Loan ID" value={loan.p2vestLoanId} />
+          {loan.p2vestAcceptedAt && <InfoRow label="Accepted At" value={fmtDate(loan.p2vestAcceptedAt)} />}
+
+          {/* Virtual repayment account */}
+          {hasVirtualAccount && (
+            <div style={{ marginTop: '10px', padding: '10px 12px', borderRadius: '7px', background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '6px' }}>
+                <Banknote size={13} color="#2563eb" />
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Patient Repayment Account</span>
+              </div>
+              <p style={{ margin: '0 0 2px', fontSize: '0.875rem', fontWeight: 700, color: '#111827', letterSpacing: '1px' }}>{loan.p2vestVirtualAccountNumber}</p>
+              <p style={{ margin: 0, fontSize: '0.8125rem', color: '#374151' }}>{loan.p2vestVirtualAccountName} · {loan.p2vestVirtualAccountBank}</p>
+              <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: '#6b7280' }}>Share this account with the patient for loan repayments.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Disbursement status from P2Vest lifecycle webhook */}
       {disbursementStatus && (
         <div style={{ padding: '10px 14px', borderRadius: '8px', background: disbursementStatus === 'confirmed' ? '#f0fdf4' : '#fef2f2', border: `1px solid ${disbursementStatus === 'confirmed' ? '#bbf7d0' : '#fecaca'}`, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           {disbursementStatus === 'confirmed' ? <CheckCircle size={16} color="#16a34a" /> : <XCircle size={16} color="#dc2626" />}

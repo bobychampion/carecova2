@@ -1794,6 +1794,20 @@ export const adminService = {
     })
   },
 
+  acceptP2VestLoanOffer: async (loanId) => {
+    requireBackendFeature('P2Vest loan acceptance')
+    const trimmed = assertBackendLoanId(loanId, 'P2Vest accept')
+    return adminRequest(`/partners/p2vest/loans/${encodeURIComponent(trimmed)}/accept`, {
+      method: 'POST',
+    })
+  },
+
+  getP2VestWallet: async (loanId) => {
+    requireBackendFeature('P2Vest wallet')
+    const trimmed = assertBackendLoanId(loanId, 'P2Vest wallet')
+    return adminRequest(`/partners/p2vest/loans/${encodeURIComponent(trimmed)}/wallet`)
+  },
+
   assignProviderToLoan: async (loanId, providerId) => {
     requireBackendFeature('Assign provider')
     const trimmed = assertBackendLoanId(loanId, 'Assign provider')
