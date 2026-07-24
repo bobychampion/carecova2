@@ -51,6 +51,14 @@ export default function ApplicantSnapshot({ loan }) {
                                 <div className="info-value">{loan.email || '—'}</div>
                             </div>
                             <div className="info-group">
+                                <div className="info-label">BVN</div>
+                                <div className="info-value">{loan.bvn || '—'}</div>
+                            </div>
+                            <div className="info-group">
+                                <div className="info-label">NIN</div>
+                                <div className="info-value">{loan.nin || '—'}</div>
+                            </div>
+                            <div className="info-group">
                                 <div className="info-label">Location (Triangulated)</div>
                                 <div className="info-value">{location.city}, {location.state}</div>
                             </div>
