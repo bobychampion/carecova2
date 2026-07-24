@@ -11,6 +11,19 @@ export const APPLICATION_STATUS = {
   ACTIVE: 'active',
   COMPLETED: 'completed',
   REJECTED: 'rejected',
+  AVAILABLE_FOR_FINANCING: 'available_for_financing',
+  UNDER_FINANCIER_REVIEW: 'under_financier_review',
+  RESERVED_FOR_FINANCING: 'reserved_for_financing',
+  FINANCED: 'financed',
+  FINANCING_DECLINED: 'financing_declined',
+}
+
+export const FINANCING_STATUS = {
+  AVAILABLE_FOR_FINANCING: 'available_for_financing',
+  UNDER_FINANCIER_REVIEW: 'under_financier_review',
+  RESERVED_FOR_FINANCING: 'reserved_for_financing',
+  FINANCED: 'financed',
+  FINANCING_DECLINED: 'financing_declined',
 }
 
 export const DISBURSEMENT_STATUS = {
@@ -48,7 +61,24 @@ export function isPostDisbursement(status) {
   return status === APPLICATION_STATUS.ACTIVE || status === APPLICATION_STATUS.COMPLETED
 }
 
+export function isFinancingStage(loan) {
+  const financingStatus = loan?.financing_status
+  if (!financingStatus) return false
+  return [
+    FINANCING_STATUS.AVAILABLE_FOR_FINANCING,
+    FINANCING_STATUS.UNDER_FINANCIER_REVIEW,
+    FINANCING_STATUS.RESERVED_FOR_FINANCING,
+  ].includes(financingStatus)
+}
+
+export function isFinanced(loan) {
+  return loan?.financing_status === FINANCING_STATUS.FINANCED
+}
+
 export function getStageLabel(loan) {
+  if (isFinancingStage(loan)) return 'Stage 4 – External Financing'
+  if (isFinanced(loan)) return 'Stage 5 – Financed'
+
   const status = loan?.status
   if (!status) return '—'
 
@@ -59,7 +89,23 @@ export function getStageLabel(loan) {
   return '—'
 }
 
-export function getStatusBadgeConfig(status) {
+export function getStatusBadgeConfig(status, financingStatus) {
+  if (financingStatus === FINANCING_STATUS.AVAILABLE_FOR_FINANCING) {
+    return { label: 'Available for Financing', icon: '●', className: 'status--financing-available' }
+  }
+  if (financingStatus === FINANCING_STATUS.UNDER_FINANCIER_REVIEW) {
+    return { label: 'Under Financier Review', icon: '◎', className: 'status--financing-review' }
+  }
+  if (financingStatus === FINANCING_STATUS.RESERVED_FOR_FINANCING) {
+    return { label: 'Reserved for Financing', icon: '◆', className: 'status--financing-reserved' }
+  }
+  if (financingStatus === FINANCING_STATUS.FINANCED) {
+    return { label: 'Financed', icon: '★', className: 'status--financing-financed' }
+  }
+  if (financingStatus === FINANCING_STATUS.FINANCING_DECLINED) {
+    return { label: 'Financing Declined', icon: '✗', className: 'status--financing-declined' }
+  }
+
   switch (status) {
     case APPLICATION_STATUS.SUBMITTED:
     case APPLICATION_STATUS.PENDING:

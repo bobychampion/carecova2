@@ -270,7 +270,7 @@ export default function Applications() {
                                     </td>
                                     <td>
                                         <div className="stage-cell">
-                                            <StatusBadge status={loan.status} />
+                                            <StatusBadge status={loan.status} financingStatus={loan.financing_status} />
                                             <span className="stage-pill">{getStageLabel(loan)}</span>
                                         </div>
                                     </td>

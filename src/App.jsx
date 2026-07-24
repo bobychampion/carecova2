@@ -21,6 +21,7 @@ import Notifications from './pages/Notifications'
 import FAQ from './pages/FAQ'
 import Profile from './pages/Profile'
 import AdminLogin from './pages/AdminLogin'
+import FinancierLogin from './pages/FinancierLogin'
 import AdminLayout from './components/admin/AdminLayout'
 import Dashboard from './pages/admin/Dashboard'
 import Applications from './pages/admin/Applications'
@@ -35,6 +36,8 @@ import UserManagement from './pages/admin/UserManagement'
 import RecoveryWorkbench from './pages/admin/RecoveryWorkbench'
 import OrganizationWallets from './pages/admin/OrganizationWallets'
 import ProviderManagement from './pages/admin/ProviderManagement'
+import FinancingQueue from './pages/admin/FinancingQueue'
+import FinancierApplicationDetail from './pages/admin/FinancierApplicationDetail'
 // Credit Officer Portal
 import CreditLayout from './pages/credit/CreditLayout'
 import CreditDashboard from './pages/credit/CreditDashboard'
@@ -50,7 +53,9 @@ import ProviderProfile from './pages/provider/ProviderProfile'
 import ProviderRegisterPatient from './pages/provider/ProviderRegisterPatient'
 import { useAuth } from './hooks/useAuth'
 import { useCustomerAuth } from './hooks/useCustomerAuth'
+import { useFinancierAuth } from './hooks/useFinancierAuth'
 import RequireRoles from './components/auth/RequireRoles'
+import ProtectedFinancierRoute from './pages/ProtectedFinancierRoute'
 import { NotificationProvider } from './context/NotificationContext'
 import './App.css'
 
@@ -59,7 +64,6 @@ function ProtectedRoute({ children }) {
 
   if (loading) return <div className="loading">Loading...</div>
   if (!isAuthenticated) return <Navigate to="/admin" replace />
-  // Redirect credit officers away from /admin to their own portal
   if (session?.role === 'credit_officer') return <Navigate to="/credit/dashboard" replace />
   return children
 }
@@ -122,6 +126,7 @@ function App() {
         <Route path="/faq" element={<FAQ />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/admin" element={<AdminLogin />} />
+  <Route path="/financier-login" element={<FinancierLogin />} />
         <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
           <Route
             path="dashboard"
@@ -248,6 +253,22 @@ function App() {
             element={
               <RequireRoles allowedRoles={['admin', 'credit_officer']}>
                 <DisbursementCaseFile />
+              </RequireRoles>
+            }
+          />
+          <Route
+            path="financing"
+            element={
+              <RequireRoles allowedRoles={['financier']}>
+                <FinancingQueue />
+              </RequireRoles>
+            }
+          />
+          <Route
+            path="financing/:id"
+            element={
+              <RequireRoles allowedRoles={['financier']}>
+                <FinancierApplicationDetail />
               </RequireRoles>
             }
           />

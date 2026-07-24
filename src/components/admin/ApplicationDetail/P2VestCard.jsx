@@ -43,6 +43,23 @@ function InfoRow({ label, value }) {
   )
 }
 
+function parseP2VestError(message) {
+  const lower = String(message || '').toLowerCase()
+  if (lower.includes('bvn') || lower.includes('customer.bvn')) {
+    return {
+      title: 'BVN is required',
+      suggestion: 'Collect the patient\'s 11-digit BVN, then update it in the Informed Decision panel before re-submitting.',
+    }
+  }
+  if (lower.includes('bank account details') || lower.includes('accountname') || lower.includes('accountnumber') || lower.includes('bankcode')) {
+    return {
+      title: 'Hospital bank details missing',
+      suggestion: 'Update the linked hospital\'s bank account details (account name, account number, bank code) in Provider Management, then re-submit.',
+    }
+  }
+  return null
+}
+
 export default function P2VestCard({ loan, onUpdated }) {
   const [submitting, setSubmitting] = useState(false)
   const [accepting, setAccepting] = useState(false)
@@ -51,6 +68,7 @@ export default function P2VestCard({ loan, onUpdated }) {
   const [providers, setProviders] = useState([])
   const [selectedProvider, setSelectedProvider] = useState('')
   const [assigning, setAssigning] = useState(false)
+  const [bvnInput, setBvnInput] = useState('')
 
   const decision = loan?.p2vestDecision
   const hasDecision = !!decision?.decisionStatus
@@ -70,8 +88,9 @@ export default function P2VestCard({ loan, onUpdated }) {
     setSuccess('')
     setSubmitting(true)
     try {
-      await adminService.submitP2VestReview(loan.id)
+      await adminService.submitP2VestReview(loan.id, bvnInput || undefined)
       setSuccess('Application submitted to P2Vest. The credit decision will appear here shortly.')
+      setBvnInput('')
       onUpdated?.()
     } catch (err) {
       setError(err.message || 'Failed to submit to P2Vest')
@@ -259,8 +278,61 @@ export default function P2VestCard({ loan, onUpdated }) {
         </div>
       )}
 
-      {error && <div style={{ padding: '10px 12px', borderRadius: '7px', background: '#fef2f2', border: '1px solid #fecaca', fontSize: '0.8125rem', color: '#dc2626', marginBottom: '12px' }}>{error}</div>}
+      {error && (() => {
+        const parsed = parseP2VestError(error)
+        const isBvnError = parsed?.title === 'BVN is required'
+        return (
+          <div style={{ padding: '10px 12px', borderRadius: '7px', background: '#fef2f2', border: '1px solid #fecaca', fontSize: '0.8125rem', color: '#dc2626', marginBottom: '12px' }}>
+            {parsed ? (
+              <>
+                <p style={{ margin: '0 0 4px', fontWeight: 600 }}>{parsed.title}</p>
+                <p style={{ margin: 0 }}>{error}</p>
+                {isBvnError && (
+                  <div style={{ marginTop: '10px' }}>
+                    <p style={{ margin: '0 0 6px', fontSize: '0.75rem', color: '#991b1b', fontWeight: 600 }}>Enter the patient's BVN to re-submit:</p>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={11}
+                        placeholder="11-digit BVN"
+                        value={bvnInput}
+                        onChange={(e) => setBvnInput(e.target.value.replace(/\D/g, ''))}
+                        style={{ flex: 1, padding: '7px 10px', borderRadius: '7px', border: '1.5px solid #fecaca', fontSize: '0.8125rem', background: '#fff', color: '#111827', outline: 'none' }}
+                      />
+                    </div>
+                    <p style={{ margin: '4px 0 0', fontSize: '0.7rem', color: '#991b1b' }}>
+                      Enter BVN above, then click Re-submit below.
+                    </p>
+                  </div>
+                )}
+                {!isBvnError && <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#991b1b' }}>{parsed.suggestion}</p>}
+              </>
+            ) : (
+              error
+            )}
+          </div>
+        )
+      })()}
       {success && <div style={{ padding: '10px 12px', borderRadius: '7px', background: '#f0fdf4', border: '1px solid #bbf7d0', fontSize: '0.8125rem', color: '#16a34a', marginBottom: '12px' }}>{success}</div>}
+
+      {/* BVN override — shown proactively if no BVN is on record yet */}
+      {!error && !loan?.customer?.bvn && !loan?.bvn && (
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '0.75rem', color: '#6b7280', marginBottom: '4px' }}>
+            Patient BVN <span style={{ color: '#9ca3af' }}>(required by P2Vest — enter if not already on record)</span>
+          </label>
+          <input
+            type="text"
+            inputMode="numeric"
+            maxLength={11}
+            placeholder="11-digit BVN"
+            value={bvnInput}
+            onChange={(e) => setBvnInput(e.target.value.replace(/\D/g, ''))}
+            style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', borderRadius: '7px', border: '1.5px solid #e2e8f0', fontSize: '0.8125rem', background: '#fff', color: '#111827', outline: 'none' }}
+          />
+        </div>
+      )}
 
       {/* Submit / re-submit button */}
       <button

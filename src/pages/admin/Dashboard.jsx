@@ -8,11 +8,19 @@ import AdminDashboardView from '../../components/admin/Dashboard/AdminDashboardV
 import SupportDashboardView from '../../components/admin/Dashboard/SupportDashboardView'
 
 export default function Dashboard() {
+    const navigate = useNavigate()
     const { session } = useAuth()
     const [loading, setLoading] = useState(true)
     const [kpis, setKpis] = useState(null)
     const [queues, setQueues] = useState(null)
     const [insights, setInsights] = useState(null)
+
+    useEffect(() => {
+        if (session?.role === 'financier') {
+            navigate('/admin/financing', { replace: true })
+            return
+        }
+    }, [session?.role, navigate])
 
     useEffect(() => {
         async function loadData() {
@@ -53,6 +61,10 @@ export default function Dashboard() {
         }
         loadData()
     }, [session?.role])
+
+    if (session?.role === 'financier') {
+        return <FullScreenLoader label="Redirecting to Financing…" />
+    }
 
     if (loading || !kpis || !queues) {
         return <FullScreenLoader label="Loading dashboard metrics…" />

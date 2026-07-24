@@ -1786,11 +1786,13 @@ export const adminService = {
     })
   },
 
-  submitP2VestReview: async (loanId) => {
+  submitP2VestReview: async (loanId, bvn) => {
     requireBackendFeature('P2Vest credit review')
     const trimmed = assertBackendLoanId(loanId, 'P2Vest review')
+    const body = bvn ? JSON.stringify({ bvn: String(bvn).trim() }) : undefined
     return adminRequest(`/partners/p2vest/loans/${encodeURIComponent(trimmed)}/review-request`, {
       method: 'POST',
+      ...(body ? { body } : {}),
     })
   },
 

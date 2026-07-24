@@ -13,6 +13,7 @@ import {
     AlertTriangle,
     Send,
     Building2,
+    Banknote,
 } from 'lucide-react';
 
 export default function AdminSidebar({ onLogout }) {
@@ -31,6 +32,7 @@ export default function AdminSidebar({ onLogout }) {
         { name: 'Providers', path: '/admin/providers', icon: <Building2 size={18} />, roles: ['admin'] },
         { name: 'Recovery', path: '/admin/recovery', icon: <AlertTriangle size={18} />, roles: ['admin', 'support', 'sales'] },
         { name: 'Disbursement Queue', path: '/admin/disbursements', icon: <Send size={18} />, roles: ['admin'] },
+        { name: 'Financing', path: '/admin/financing', icon: <Banknote size={18} />, roles: ['financier'] },
     ]
 
     const navItems = allItems.filter(item => item.roles.includes(role))
