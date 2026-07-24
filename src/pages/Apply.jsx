@@ -593,11 +593,14 @@ export default function Apply() {
               </div>
 
               <Input
-                label="BVN (optional but recommended)"
+                label="BVN"
                 type="text"
                 placeholder="11-digit BVN"
                 value={formData.bvn}
-                onChange={(e) => handleChange('bvn', e.target.value)}
+                onChange={(e) => handleChange('bvn', e.target.value.replace(/\D/g, ''))}
+                maxLength={11}
+                error={errors.bvn}
+                required
               />
               <Input
                 label="NIN (optional)"

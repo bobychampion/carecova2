@@ -49,6 +49,9 @@ export const validateStep = (step, formData) => {
         formData.documents.id_document &&
         (formData.documents.id_document.fileName || formData.documents.id_document.url)
       if (!hasIdDoc) errors.id_document = 'Government-issued ID is required'
+      const bvn = String(formData.bvn || '').trim()
+      if (!bvn) errors.bvn = 'BVN is required'
+      else if (!/^\d{11}$/.test(bvn)) errors.bvn = 'BVN must be exactly 11 digits'
       break
     }
 
