@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import StatusBadge from '../../StatusBadge'
 import { useRiskBadge } from '../../../hooks/useAffordabilityCheck'
+import { adminService } from '../../../services/adminService'
 
-export default function ApplicantSnapshot({ loan }) {
+export default function ApplicantSnapshot({ loan, onUpdated }) {
     const getDocumentStatus = (docKey) => {
         if (!loan.documents) return 'missing'
         const doc = loan.documents[docKey]
@@ -10,6 +12,26 @@ export default function ApplicantSnapshot({ loan }) {
     }
 
     const formatDocName = (key) => key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+
+    const [editingIdentity, setEditingIdentity] = useState(false)
+    const [bvnInput, setBvnInput] = useState(loan.bvn || '')
+    const [ninInput, setNinInput] = useState(loan.nin || '')
+    const [savingIdentity, setSavingIdentity] = useState(false)
+    const [identityError, setIdentityError] = useState('')
+
+    const handleSaveIdentity = async () => {
+      setSavingIdentity(true)
+      setIdentityError('')
+      try {
+        await adminService.updateLoanIdentity(loan.id, { bvn: bvnInput, nin: ninInput })
+        setEditingIdentity(false)
+        onUpdated?.()
+      } catch (err) {
+        setIdentityError(err.message || 'Failed to save')
+      } finally {
+        setSavingIdentity(false)
+      }
+    }
 
     // Safe extraction of nested structures from new Apply hook output
     const location = loan.location || { state: loan.state, city: loan.city }
@@ -50,14 +72,69 @@ export default function ApplicantSnapshot({ loan }) {
                                 <div className="info-label">Email</div>
                                 <div className="info-value">{loan.email || '—'}</div>
                             </div>
-                            <div className="info-group">
-                                <div className="info-label">BVN</div>
-                                <div className="info-value">{loan.bvn || '—'}</div>
-                            </div>
-                            <div className="info-group">
-                                <div className="info-label">NIN</div>
-                                <div className="info-value">{loan.nin || '—'}</div>
-                            </div>
+                            {editingIdentity ? (
+                              <div className="info-group col-span-2" style={{ gridColumn: '1 / -1' }}>
+                                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                                  <div>
+                                    <div className="info-label">BVN</div>
+                                    <input
+                                      type="text"
+                                      inputMode="numeric"
+                                      maxLength={11}
+                                      value={bvnInput}
+                                      onChange={(e) => setBvnInput(e.target.value.replace(/\D/g, ''))}
+                                      placeholder="11-digit BVN"
+                                      style={{ padding: '6px 10px', borderRadius: '6px', border: '1.5px solid #d1d5db', fontSize: '0.875rem', width: '150px' }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <div className="info-label">NIN</div>
+                                    <input
+                                      type="text"
+                                      inputMode="numeric"
+                                      maxLength={11}
+                                      value={ninInput}
+                                      onChange={(e) => setNinInput(e.target.value.replace(/\D/g, ''))}
+                                      placeholder="11-digit NIN"
+                                      style={{ padding: '6px 10px', borderRadius: '6px', border: '1.5px solid #d1d5db', fontSize: '0.875rem', width: '150px' }}
+                                    />
+                                  </div>
+                                  <button
+                                    onClick={handleSaveIdentity}
+                                    disabled={savingIdentity}
+                                    style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', background: '#2563eb', color: '#fff', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer' }}
+                                  >
+                                    {savingIdentity ? 'Saving…' : 'Save'}
+                                  </button>
+                                  <button
+                                    onClick={() => { setEditingIdentity(false); setBvnInput(loan.bvn || ''); setNinInput(loan.nin || '') }}
+                                    style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #d1d5db', background: '#fff', fontSize: '0.8125rem', cursor: 'pointer' }}
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                                {identityError && <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#dc2626' }}>{identityError}</p>}
+                              </div>
+                            ) : (
+                              <>
+                                <div className="info-group">
+                                  <div className="info-label">BVN</div>
+                                  <div className="info-value" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    {loan.bvn || <span style={{ color: '#ef4444', fontWeight: 600 }}>Missing</span>}
+                                    <button
+                                      onClick={() => { setEditingIdentity(true); setBvnInput(loan.bvn || ''); setNinInput(loan.nin || '') }}
+                                      style={{ fontSize: '0.7rem', padding: '2px 7px', borderRadius: '4px', border: '1px solid #d1d5db', background: '#f9fafb', cursor: 'pointer', color: '#6b7280' }}
+                                    >
+                                      Edit
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="info-group">
+                                  <div className="info-label">NIN</div>
+                                  <div className="info-value">{loan.nin || '—'}</div>
+                                </div>
+                              </>
+                            )}
                             <div className="info-group">
                                 <div className="info-label">Location (Triangulated)</div>
                                 <div className="info-value">{location.city}, {location.state}</div>

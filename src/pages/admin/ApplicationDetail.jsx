@@ -253,7 +253,7 @@ export default function ApplicationDetail() {
 
             {activeTab === 'review' ? (
                 <div className="detail-layout-3col">
-                    <ApplicantSnapshot loan={loan} />
+                    <ApplicantSnapshot loan={loan} onUpdated={() => loadLoanDetails({ silent: true })} />
 
                     <div className="detail-column">
                         {salesCanDoStage1 ? (

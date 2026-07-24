@@ -1786,6 +1786,15 @@ export const adminService = {
     })
   },
 
+  updateLoanIdentity: async (loanId, { bvn, nin } = {}) => {
+    requireBackendFeature('Update loan identity')
+    const trimmed = assertBackendLoanId(loanId, 'Update identity')
+    return adminRequest(`/admin/loan-applications/${encodeURIComponent(trimmed)}/identity`, {
+      method: 'PATCH',
+      body: JSON.stringify({ bvn, nin }),
+    })
+  },
+
   submitP2VestReview: async (loanId, bvn) => {
     requireBackendFeature('P2Vest credit review')
     const trimmed = assertBackendLoanId(loanId, 'P2Vest review')
