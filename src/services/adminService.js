@@ -1795,6 +1795,15 @@ export const adminService = {
     })
   },
 
+  requestDocuments: async (loanId, { documents, message } = {}) => {
+    requireBackendFeature('Request documents')
+    const trimmed = assertBackendLoanId(loanId, 'Request documents')
+    return adminRequest(`/admin/loan-applications/${encodeURIComponent(trimmed)}/request-documents`, {
+      method: 'POST',
+      body: JSON.stringify({ documents, message }),
+    })
+  },
+
   submitP2VestReview: async (loanId, bvn) => {
     requireBackendFeature('P2Vest credit review')
     const trimmed = assertBackendLoanId(loanId, 'P2Vest review')

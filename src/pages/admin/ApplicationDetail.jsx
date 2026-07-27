@@ -15,6 +15,7 @@ import DirectDebitCard from '../../components/admin/DirectDebitCard'
 import P2VestCard from '../../components/admin/ApplicationDetail/P2VestCard'
 import InlineLoader from '../../components/ui/InlineLoader'
 import Modal from '../../components/ui/Modal'
+import RequestDocumentsModal from '../../components/admin/ApplicationDetail/RequestDocumentsModal'
 
 export default function ApplicationDetail() {
     const { id } = useParams()
@@ -29,6 +30,7 @@ export default function ApplicationDetail() {
     const [monoFeedbackMessage, setMonoFeedbackMessage] = useState('')
     const [monoFeedbackError, setMonoFeedbackError] = useState('')
     const [feedbackModal, setFeedbackModal] = useState({ open: false, title: '', message: '' })
+    const [showRequestDocs, setShowRequestDocs] = useState(false)
     const [providers, setProviders] = useState([])
     const [selectedProviderId, setSelectedProviderId] = useState('')
     const [assigningProvider, setAssigningProvider] = useState(false)
@@ -195,7 +197,10 @@ export default function ApplicationDetail() {
                         <StatusBadge status={loan.status} financingStatus={loan.financing_status} />
                         <span className="stage-pill">{getStageLabel(loan)}</span>
                     </div>
-                    <p className="text-xs text-muted mt-1">Application ID: {loan.id}</p>
+                    <p className="text-xs text-muted mt-1">
+                      {loan.applicationCode && <span style={{ fontWeight: 700, color: '#1d4ed8', marginRight: '10px' }}>{loan.applicationCode}</span>}
+                      <span>ID: {loan.id}</span>
+                    </p>
                     {loan.assignedTo && (
                         <p className="text-sm mt-1">
                             Assigned to:{' '}
@@ -292,6 +297,35 @@ export default function ApplicationDetail() {
                                 onReject={handleReject}
                                 onRequestInfo={handleRequestInfo}
                             />
+
+                            <div className="detail-card mt-4">
+                              <h3 style={{ margin: '0 0 8px', fontSize: '0.9375rem', fontWeight: 600 }}>Documents</h3>
+                              {loan.documentRequests?.length > 0 ? (
+                                <div style={{ marginBottom: '10px' }}>
+                                  {loan.documentRequests.map((doc) => (
+                                    <div key={doc.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', borderBottom: '1px solid #f3f4f6', fontSize: '0.8125rem' }}>
+                                      <span style={{ fontSize: '0.9rem' }}>{doc.status === 'uploaded' ? '✅' : '⏳'}</span>
+                                      <div style={{ flex: 1 }}>
+                                        <span style={{ fontWeight: 600 }}>{doc.label}</span>
+                                        {doc.note && <span style={{ color: '#6b7280', marginLeft: '6px' }}>— {doc.note}</span>}
+                                      </div>
+                                      {doc.status === 'uploaded' && doc.fileUrl && (
+                                        <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', fontSize: '0.75rem' }}>View</a>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p style={{ margin: '0 0 10px', color: '#9ca3af', fontSize: '0.8125rem' }}>No documents requested yet.</p>
+                              )}
+                              <button
+                                onClick={() => setShowRequestDocs(true)}
+                                style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: '7px', padding: '7px 14px', color: '#1d4ed8', fontWeight: 600, fontSize: '0.8125rem', cursor: 'pointer', width: '100%' }}
+                              >
+                                📎 Request Documents from Applicant
+                              </button>
+                            </div>
+
                             {session?.role === 'admin' && (
                                 <div className="detail-card mt-4">
                                     <h3 style={{ margin: '0 0 4px', fontSize: '0.9375rem', fontWeight: 600 }}>Assign Provider</h3>
@@ -375,6 +409,19 @@ export default function ApplicationDetail() {
         >
             <p className="text-sm text-muted">{feedbackModal.message}</p>
         </Modal>
+
+        {showRequestDocs && (
+          <RequestDocumentsModal
+            loanId={loan.id}
+            applicantEmail={loan.email}
+            onClose={() => setShowRequestDocs(false)}
+            onSuccess={(updated) => {
+              setLoan({ ...updated, affordability: loan.affordability, riskFlags: loan.riskFlags })
+              setShowRequestDocs(false)
+              openFeedback('Documents Requested', loan.email ? `Upload link sent to ${loan.email}` : 'Upload link generated — no email on file.')
+            }}
+          />
+        )}
         </>
     )
 }

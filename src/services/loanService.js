@@ -453,6 +453,19 @@ export const loanService = {
     return updated
   },
 
+  checkExistingApplications: async (phone) => {
+    if (!USE_BACKEND || !phone) return []
+    try {
+      const params = new URLSearchParams({ phone: phone.trim() })
+      const list = await request(`/loan-applications/customer/loans?${params}`)
+      const items = Array.isArray(list) ? list : (list?.items || list?.data || [])
+      const ACTIVE_STATUSES = ['submitted', 'pending', 'pending_stage1', 'pending_admin_review', 'incomplete', 'first_stage_review']
+      return items.map(normalizeLoan).filter((l) => ACTIVE_STATUSES.includes((l.status || '').toLowerCase()))
+    } catch {
+      return []
+    }
+  },
+
   getLoansByCustomerId: async (customerId, customerPhone) => {
     if (USE_BACKEND) {
       const params = new URLSearchParams()

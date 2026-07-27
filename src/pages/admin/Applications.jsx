@@ -242,7 +242,9 @@ export default function Applications() {
                                 >
                                     <td>
                                             <div className="font-medium">{loan.fullName || loan.patientName}</div>
-                                            <div className="text-muted text-xs font-mono">{loan.id}</div>
+                                            <div className="text-muted text-xs font-mono">
+                                              {loan.applicationCode ? <span style={{ color: '#1d4ed8', fontWeight: 600 }}>{loan.applicationCode}</span> : loan.id}
+                                            </div>
                                     </td>
                                     <td>
                                         <div className="capitalize">{loan.employmentSector || loan.employmentType || '—'}</div>

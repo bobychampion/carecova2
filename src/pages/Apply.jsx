@@ -16,6 +16,7 @@ import { trackingService } from '../services/trackingService'
 import MoneyInput from '../components/MoneyInput'
 import { useAffordabilityCheck } from '../hooks/useAffordabilityCheck'
 import { uploadFileToCloudinary } from '../services/cloudinaryService'
+import LoanCalculator from '../components/LoanCalculator'
 
 const TOTAL_STEPS = 5
 
@@ -93,6 +94,9 @@ export default function Apply() {
   const [uploadingApplicantPhoto, setUploadingApplicantPhoto] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [loanId, setLoanId] = useState(null)
+  const [applicationCode, setApplicationCode] = useState(null)
+  const [existingApplications, setExistingApplications] = useState([])
+  const [existingWarningDismissed, setExistingWarningDismissed] = useState(false)
   const [errors, setErrors] = useState({})
   const [draftIdState, setDraftIdState] = useState(null)
 
@@ -364,12 +368,20 @@ export default function Apply() {
       const result = await loanService.submitApplication(buildPayload())
       if (draftIdState) await applicationService.deleteDraft(draftIdState)
       setLoanId(result.id)
+      setApplicationCode(result.applicationCode || null)
       setSubmitted(true)
     } catch (error) {
       setErrors({ submit: error.message })
     } finally {
       setLoading(false)
     }
+  }
+
+  const checkExistingApplications = async (phone) => {
+    if (!phone || phone.length < 7) return
+    const existing = await loanService.checkExistingApplications(phone)
+    setExistingApplications(existing)
+    setExistingWarningDismissed(false)
   }
 
   const captureLocation = () => {
@@ -396,8 +408,24 @@ export default function Apply() {
             <p className="step-description">Identify yourself and where you will be receiving treatment.</p>
             <div className="form-grid">
               <Input label="Full name" type="text" placeholder="e.g. Adekunle Johnson" value={formData.fullName} onChange={(e) => handleChange('fullName', e.target.value)} onBlur={() => setErrors((prev) => ({ ...prev, ...validateStep(1, formData) }))} error={errors.fullName} required />
-              <Input label="Phone number" type="tel" placeholder="0801 234 5678" value={formData.phone} onChange={(e) => handleChange('phone', e.target.value)} onBlur={() => setErrors((prev) => ({ ...prev, ...validateStep(1, formData) }))} error={errors.phone} required />
+              <Input label="Phone number" type="tel" placeholder="0801 234 5678" value={formData.phone} onChange={(e) => handleChange('phone', e.target.value)} onBlur={() => { setErrors((prev) => ({ ...prev, ...validateStep(1, formData) })); checkExistingApplications(formData.phone) }} error={errors.phone} required />
               <Input label="Email (optional)" type="email" placeholder="name@example.com" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} onBlur={() => setErrors((prev) => ({ ...prev, ...validateStep(1, formData) }))} error={errors.email} />
+
+              {existingApplications.length > 0 && !existingWarningDismissed && (
+                <div style={{ gridColumn: '1 / -1', background: '#fffbeb', border: '1.5px solid #f59e0b', borderRadius: '8px', padding: '12px 16px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                  <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>⚠️</span>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ margin: '0 0 4px', fontWeight: 700, color: '#92400e', fontSize: '0.9rem' }}>You have an existing application</p>
+                    <p style={{ margin: 0, color: '#78350f', fontSize: '0.8125rem' }}>
+                      {existingApplications.length === 1
+                        ? `Application ${existingApplications[0].applicationCode || existingApplications[0].id} is still being reviewed.`
+                        : `You have ${existingApplications.length} applications currently under review.`}
+                      {' '}You can continue applying — we'll review all submissions.
+                    </p>
+                  </div>
+                  <button type="button" onClick={() => setExistingWarningDismissed(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#92400e', fontSize: '1rem', padding: '0 2px', flexShrink: 0 }}>✕</button>
+                </div>
+              )}
 
               <div className="form-section-label" style={{ gridColumn: '1 / -1', marginTop: '1rem', borderTop: '1px solid #ddd', paddingTop: '1rem' }}>
                 <h3>Your Location</h3>
@@ -808,6 +836,12 @@ export default function Apply() {
               <MoneyInput label="Requested loan amount" placeholder="₦ 0.00" value={formData.requestedAmount} onChange={(v) => handleChange('requestedAmount', v)} error={errors.requestedAmount} required />
               <Select label="Preferred repayment tenor" options={TENOR_OPTIONS} value={formData.preferredTenor} onChange={(e) => { handleChange('preferredTenor', e.target.value); const m = { '1': 1, '2': 2, '3-4': 4, '6': 6 }[e.target.value]; if (m) handleChange('preferredDuration', m) }} onBlur={() => setErrors((prev) => ({ ...prev, ...validateStep(3, formData) }))} error={errors.preferredTenor} required />
 
+              {formData.requestedAmount >= 100000 && formData.preferredDuration >= 1 && (
+                <div style={{ gridColumn: '1 / -1', marginTop: '0.5rem' }}>
+                  <LoanCalculator compact initialAmount={formData.requestedAmount} initialTenure={formData.preferredDuration} />
+                </div>
+              )}
+
               <div className="form-section-label" style={{ gridColumn: '1 / -1', marginTop: '1rem', borderTop: '1px solid #ddd', paddingTop: '1rem' }}>
                 <h3>Repayment Preferences</h3>
                 <p className="caption" style={{ marginTop: '0' }}>Preference helps us set up repayment, but final route follows policy.</p>
@@ -939,9 +973,11 @@ export default function Apply() {
                 <h1 className="customer-welcome-title">Welcome to Carecova</h1>
                 <p className="customer-welcome-lead">Your healthcare financing application has been submitted. We’re here to support you through the process.</p>
                 <div className="customer-welcome-id-box">
-                  <span className="customer-welcome-id-label">Your application ID</span>
-                  <strong className="customer-welcome-id-value">{loanId ?? '—'}</strong>
-                  <p className="customer-welcome-id-hint">Save this ID to track your application. We’ll also send it to you via SMS and email.</p>
+                  <span className="customer-welcome-id-label">Your tracking number</span>
+                  <strong className="customer-welcome-id-value" style={{ fontSize: applicationCode ? "1.5rem" : undefined, letterSpacing: applicationCode ? "0.08em" : undefined }}>
+                    {applicationCode ?? loanId ?? "—"}
+                  </strong>
+                  <p className="customer-welcome-id-hint">Save this reference to track your application. A confirmation has been sent to your email.</p>
                 </div>
                 <div className="customer-welcome-next">
                   <h3>What happens next?</h3>
