@@ -13,6 +13,7 @@ import DecisionPanel from '../../components/admin/ApplicationDetail/DecisionPane
 import SalesDataCollection from '../../components/admin/ApplicationDetail/SalesDataCollection'
 import DirectDebitCard from '../../components/admin/DirectDebitCard'
 import P2VestCard from '../../components/admin/ApplicationDetail/P2VestCard'
+import AiPreScreenCard from '../../components/admin/ApplicationDetail/AiPreScreenCard'
 import InlineLoader from '../../components/ui/InlineLoader'
 import Modal from '../../components/ui/Modal'
 import RequestDocumentsModal from '../../components/admin/ApplicationDetail/RequestDocumentsModal'
@@ -284,6 +285,10 @@ export default function ApplicationDetail() {
                                         onUpdated={() => loadLoanDetails({ silent: true })}
                                     />
                                 ) : null}
+                                <AiPreScreenCard
+                                    loan={loan}
+                                    onUpdated={(updated) => setLoan({ ...updated, affordability: loan.affordability, riskFlags: loan.riskFlags })}
+                                />
                             </>
                         )}
                     </div>

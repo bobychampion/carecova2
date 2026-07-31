@@ -442,6 +442,14 @@ export const adminService = {
     })
   },
 
+  runAiPreScreen: async (loanId) => {
+    requireBackendFeature('AI pre-screen')
+    const trimmed = assertBackendLoanId(loanId, 'AI pre-screen')
+    return adminRequest(`/admin/loan-applications/${trimmed}/ai/prescreen`, {
+      method: 'POST',
+    })
+  },
+
   createMonoDirectDebitCustomerForLoan: async (loanId, payload = {}) => {
     if (USE_BACKEND) {
       const trimmed = assertBackendLoanId(loanId, 'Mono direct debit customer')
