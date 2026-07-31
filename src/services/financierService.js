@@ -274,11 +274,25 @@ export const financierService = {
     })
   },
 
+  getLoan: async (loanId) => {
+    const session = getStoredFinancingSession()
+    if (USE_BACKEND && session?.accessToken) {
+      const response = await fetch(`${API_ROOT}/financiers/loans/${loanId}`, {
+        headers: { Authorization: `Bearer ${session.accessToken}` },
+      })
+      if (!response.ok) throw new Error('Failed to fetch loan details')
+      return normalizeLoanFromApi(await response.json())
+    }
+
+    const loans = getLoans()
+    return loans.find((l) => l.id === loanId) || null
+  },
+
   getActivityLog: async (loanId) => {
     const session = getStoredFinancingSession()
     if (USE_BACKEND && session?.accessToken) {
       const url = loanId
-        ? `${API_ROOT}/financiers/loans/${loanId}/financing-activity`
+        ? `${API_ROOT}/financiers/financing-activity?loanId=${loanId}`
         : `${API_ROOT}/financiers/financing-activity`
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${session.accessToken}` },

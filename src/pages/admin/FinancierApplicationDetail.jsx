@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useFinancierAuth } from '../../hooks/useFinancierAuth'
 import { financierService } from '../../services/financierService'
 import { FINANCING_STATUS } from '../../utils/statusModel'
-import { auditService } from '../../services/auditService'
 import { computeAffordability, computeRiskFlags } from '../../utils/affordabilityEngine'
 import { getStatusBadgeConfig } from '../../utils/statusModel'
 import StatusBadge from '../../components/StatusBadge'
@@ -39,10 +38,9 @@ export default function FinancierApplicationDetail() {
     const loadLoanDetails = async () => {
         try {
             setLoading(true)
-            const found = await financierService.getAvailableForFinancing()
-            const match = found.find((l) => l.id === id)
+            const match = await financierService.getLoan(id)
             if (!match) {
-                setError('Application not found or not available for financing')
+                setError('Application not found')
             } else {
                 setLoan({
                     ...match,

@@ -9,6 +9,7 @@ import CashFlowTab from '../../components/admin/InformedDecision/CashFlowTab'
 import LoanSignalsTab from '../../components/admin/InformedDecision/LoanSignalsTab'
 import SpendingTab from '../../components/admin/InformedDecision/SpendingTab'
 import AccountStabilityTab from '../../components/admin/InformedDecision/AccountStabilityTab'
+import GeminiInsightsTab from '../../components/admin/InformedDecision/GeminiInsightsTab'
 
 const TABS = [
   { key: 'decision', label: 'Decision Support' },
@@ -18,6 +19,7 @@ const TABS = [
   { key: 'loans', label: 'Loan Signals' },
   { key: 'spending', label: 'Spending' },
   { key: 'stability', label: 'Account Stability' },
+  { key: 'ai', label: '✦ AI Analysis' },
 ]
 
 export default function InformedDecision() {
@@ -33,6 +35,7 @@ export default function InformedDecision() {
   const [sectionLoading, setSectionLoading] = useState({})
   const [overviewLoaded, setOverviewLoaded] = useState(false)
   const [activeTab, setActiveTab] = useState('decision')
+  const [refreshingAI, setRefreshingAI] = useState(false)
 
   const [form, setForm] = useState({
     bvn: '',
@@ -87,6 +90,18 @@ export default function InformedDecision() {
     return payload
   }
 
+  const refreshLoanForAI = async () => {
+    setRefreshingAI(true)
+    try {
+      const fresh = await adminService.getLoanById(id)
+      if (fresh) setLoan(fresh)
+    } catch {
+      // silent — AI insights are best-effort
+    } finally {
+      setRefreshingAI(false)
+    }
+  }
+
   const loadOverview = async (forceRefresh = false) => {
     if (!canRun) return
     try {
@@ -99,6 +114,8 @@ export default function InformedDecision() {
       )
       setReport(data)
       setOverviewLoaded(true)
+      // Re-fetch loan after 4s to pick up Gemini insights (runs async in background)
+      setTimeout(refreshLoanForAI, 4000)
     } catch (err) {
       setError(err.message || 'Unable to fetch Mono informed decision data')
     } finally {
@@ -254,6 +271,13 @@ export default function InformedDecision() {
             {activeTab === 'loans' && <LoanSignalsTab {...tabProps} />}
             {activeTab === 'spending' && <SpendingTab {...tabProps} />}
             {activeTab === 'stability' && <AccountStabilityTab {...tabProps} />}
+            {activeTab === 'ai' && (
+              <GeminiInsightsTab
+                loan={loan}
+                onRefresh={refreshLoanForAI}
+                refreshing={refreshingAI}
+              />
+            )}
           </div>
         </>
       )}
