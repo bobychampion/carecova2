@@ -506,6 +506,38 @@ export const adminService = {
     })
   },
 
+  getFinancierReport: async (loanId) => {
+    requireBackendFeature('Financier report')
+    const trimmed = assertBackendLoanId(loanId, 'Financier report')
+    return adminRequest(`/admin/loan-applications/${trimmed}/financier-report`)
+  },
+
+  downloadFinancierReportPdf: async (loanId) => {
+    requireBackendFeature('Financier report PDF')
+    const trimmed = assertBackendLoanId(loanId, 'Financier report PDF')
+    const session = getStoredSession()
+    const token = session?.accessToken
+    if (!token) throw new Error('Not authenticated')
+    const response = await fetch(`${API_ROOT}/admin/loan-applications/${trimmed}/financier-report/pdf`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!response.ok) {
+      const text = await response.text().catch(() => 'Unknown error')
+      throw new Error(`Failed to download report: ${text}`)
+    }
+    const blob = await response.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    const disposition = response.headers.get('Content-Disposition') ?? ''
+    const match = disposition.match(/filename="([^"]+)"/)
+    a.download = match ? match[1] : `carecova-report-${trimmed}.pdf`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  },
+
   createMonoDirectDebitCustomerForLoan: async (loanId, payload = {}) => {
     if (USE_BACKEND) {
       const trimmed = assertBackendLoanId(loanId, 'Mono direct debit customer')

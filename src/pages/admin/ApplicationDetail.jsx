@@ -63,6 +63,8 @@ export default function ApplicationDetail() {
     const [selectedProviderId, setSelectedProviderId] = useState('')
     const [assigningProvider, setAssigningProvider] = useState(false)
     const [assignProviderError, setAssignProviderError] = useState('')
+    const [pdfDownloading, setPdfDownloading] = useState(false)
+    const [pdfError, setPdfError] = useState('')
 
     const loadLoanDetails = async ({ silent = false } = {}) => {
         try {
@@ -454,6 +456,69 @@ export default function ApplicationDetail() {
                                     </div>
                                 ))}
                             </div>
+                        </div>
+
+                        {/* Financier Report Download */}
+                        <div className="detail-card" style={{ borderLeft: '4px solid #0f766e' }}>
+                            <div style={{ marginBottom: '8px' }}>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Financier Report</span>
+                                <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: '#6b7280' }}>
+                                    Structured credit report for lenders — includes KYC, bank analysis, credit decision.
+                                </p>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <button
+                                    onClick={async () => {
+                                        setPdfDownloading(true)
+                                        setPdfError('')
+                                        try {
+                                            await adminService.downloadFinancierReportPdf(loan.id || loan._id)
+                                        } catch (err) {
+                                            setPdfError(err.message || 'Failed to download PDF')
+                                        } finally {
+                                            setPdfDownloading(false)
+                                        }
+                                    }}
+                                    disabled={pdfDownloading}
+                                    style={{
+                                        width: '100%', padding: '9px 14px', borderRadius: '8px',
+                                        border: 'none', background: pdfDownloading ? '#e5e7eb' : '#0f766e',
+                                        color: pdfDownloading ? '#9ca3af' : '#fff',
+                                        fontWeight: 700, fontSize: '0.8125rem',
+                                        cursor: pdfDownloading ? 'not-allowed' : 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                                    }}
+                                >
+                                    {pdfDownloading ? 'Generating PDF…' : '⬇ Download PDF Report'}
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const report = await adminService.getFinancierReport(loan.id || loan._id)
+                                            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' })
+                                            const url = URL.createObjectURL(blob)
+                                            const a = document.createElement('a')
+                                            a.href = url
+                                            a.download = `carecova-report-${loan.applicationCode || (loan.id || loan._id).slice(-8)}.json`
+                                            document.body.appendChild(a)
+                                            a.click()
+                                            document.body.removeChild(a)
+                                            URL.revokeObjectURL(url)
+                                        } catch (err) {
+                                            setPdfError(err.message || 'Failed to download JSON')
+                                        }
+                                    }}
+                                    style={{
+                                        width: '100%', padding: '7px 14px', borderRadius: '8px',
+                                        border: '1.5px solid #ccfbf1', background: '#f0fdfa',
+                                        color: '#0f766e', fontWeight: 600, fontSize: '0.8rem',
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    {'{ }'} Download JSON Report
+                                </button>
+                            </div>
+                            {pdfError && <p style={{ margin: '6px 0 0', fontSize: '0.8125rem', color: '#dc2626' }}>{pdfError}</p>}
                         </div>
 
                         {/* Assign hospital provider */}
