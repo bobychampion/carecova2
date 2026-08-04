@@ -474,6 +474,14 @@ export const adminService = {
     })
   },
 
+  fetchMonoCreditworthiness: async (loanId) => {
+    requireBackendFeature('Mono credit lookup')
+    const trimmed = assertBackendLoanId(loanId, 'Mono credit lookup')
+    return adminRequest(`/admin/loan-applications/${trimmed}/mono/fetch-creditworthiness`, {
+      method: 'POST',
+    })
+  },
+
   createMonoDirectDebitCustomerForLoan: async (loanId, payload = {}) => {
     if (USE_BACKEND) {
       const trimmed = assertBackendLoanId(loanId, 'Mono direct debit customer')
