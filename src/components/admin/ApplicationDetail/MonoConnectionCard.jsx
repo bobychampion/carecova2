@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { adminService } from '../../../services/adminService'
+import { ChevronDown } from 'lucide-react'
 
 const STATUS_META = {
   not_started: {
@@ -38,6 +39,11 @@ export default function MonoConnectionCard({
   const [fetching, setFetching] = useState(false)
   const [fetchResult, setFetchResult] = useState(null)
   const [fetchError, setFetchError] = useState('')
+  const [showManualOverride, setShowManualOverride] = useState(false)
+  const [manualAccountId, setManualAccountId] = useState('')
+  const [manualSaving, setManualSaving] = useState(false)
+  const [manualError, setManualError] = useState('')
+  const [manualSuccess, setManualSuccess] = useState('')
 
   const statusKey = loan.monoConnectionStatus || 'not_started'
   const meta = STATUS_META[statusKey] || STATUS_META.not_started
@@ -46,6 +52,23 @@ export default function MonoConnectionCard({
   const transactionCache = loan.monoInformedDecisionCache?.sections?.transactions
   const alreadyFetched = Boolean(transactionCache)
   const txCount = transactionCache?.count ?? null
+
+  const handleManualSetAccount = async () => {
+    if (!manualAccountId.trim()) return
+    setManualSaving(true)
+    setManualError('')
+    setManualSuccess('')
+    try {
+      await adminService.setMonoAccountIdManually(loan.id, manualAccountId.trim())
+      setManualSuccess('Account ID saved. The application is now showing as linked.')
+      setManualAccountId('')
+      if (onStatementFetched) onStatementFetched()
+    } catch (err) {
+      setManualError(err.message || 'Failed to save account ID')
+    } finally {
+      setManualSaving(false)
+    }
+  }
 
   const handleFetchStatement = async () => {
     setFetching(true)
@@ -198,6 +221,48 @@ export default function MonoConnectionCard({
           </div>
         )}
       </div>
+
+      {/* Manual override — for when webhook didn't fire */}
+      {statusKey !== 'linked' && (
+        <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #f3f4f6' }}>
+          <button
+            onClick={() => setShowManualOverride((v) => !v)}
+            style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: '#9ca3af', padding: 0 }}
+          >
+            <ChevronDown size={13} style={{ transform: showManualOverride ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
+            Patient linked but status not updating? Set account ID manually
+          </button>
+
+          {showManualOverride && (
+            <div style={{ marginTop: '10px', padding: '12px', borderRadius: '8px', background: '#fffbeb', border: '1px solid #fde68a' }}>
+              <p style={{ margin: '0 0 8px', fontSize: '0.8125rem', color: '#92400e', fontWeight: 600 }}>
+                Webhook may not have fired
+              </p>
+              <p style={{ margin: '0 0 10px', fontSize: '0.75rem', color: '#78350f' }}>
+                Get the Mono account ID from the Mono dashboard → Accounts section. Paste it below to manually mark this application as linked.
+              </p>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="text"
+                  placeholder="Mono account ID (e.g. 6a635590a034…)"
+                  value={manualAccountId}
+                  onChange={(e) => setManualAccountId(e.target.value.trim())}
+                  style={{ flex: 1, padding: '7px 10px', borderRadius: '7px', border: '1.5px solid #fde68a', fontSize: '0.8125rem', background: '#fff', color: '#111827' }}
+                />
+                <button
+                  onClick={handleManualSetAccount}
+                  disabled={!manualAccountId.trim() || manualSaving}
+                  style={{ padding: '7px 14px', borderRadius: '7px', border: 'none', background: manualAccountId.trim() ? '#d97706' : '#e5e7eb', color: manualAccountId.trim() ? '#fff' : '#9ca3af', fontWeight: 600, fontSize: '0.8125rem', cursor: manualAccountId.trim() ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' }}
+                >
+                  {manualSaving ? 'Saving…' : 'Set'}
+                </button>
+              </div>
+              {manualError && <p style={{ margin: '6px 0 0', fontSize: '0.8125rem', color: '#dc2626' }}>{manualError}</p>}
+              {manualSuccess && <p style={{ margin: '6px 0 0', fontSize: '0.8125rem', color: '#16a34a' }}>{manualSuccess}</p>}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

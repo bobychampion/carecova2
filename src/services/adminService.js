@@ -482,6 +482,30 @@ export const adminService = {
     })
   },
 
+  setMonoAccountIdManually: async (loanId, monoAccountId) => {
+    requireBackendFeature('Mono manual account set')
+    const trimmed = assertBackendLoanId(loanId, 'Mono manual account set')
+    return adminRequest(`/admin/loan-applications/${trimmed}/mono/set-account`, {
+      method: 'POST',
+      body: JSON.stringify({ monoAccountId }),
+    })
+  },
+
+  getEligibleLendingProviders: async (loanId) => {
+    requireBackendFeature('Lending providers')
+    const trimmed = assertBackendLoanId(loanId, 'Lending providers')
+    return adminRequest(`/admin/loan-applications/${trimmed}/eligible-providers`)
+  },
+
+  submitToLendingProvider: async (loanId, providerId, bvnOverride) => {
+    requireBackendFeature('Lending provider submission')
+    const trimmed = assertBackendLoanId(loanId, 'Lending provider submission')
+    return adminRequest(`/admin/loan-applications/${trimmed}/provider/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ providerId, ...(bvnOverride ? { bvnOverride } : {}) }),
+    })
+  },
+
   createMonoDirectDebitCustomerForLoan: async (loanId, payload = {}) => {
     if (USE_BACKEND) {
       const trimmed = assertBackendLoanId(loanId, 'Mono direct debit customer')
