@@ -49,6 +49,22 @@ const EMPLOYMENT_SECTOR_OPTIONS = [
   { value: 'self-employed', label: 'Self-employed' },
 ]
 
+const GENDER_OPTIONS = [
+  { value: '', label: 'Select gender' },
+  { value: 'male', label: 'Male' },
+  { value: 'female', label: 'Female' },
+  { value: 'other', label: 'Other' },
+]
+
+const EMPLOYMENT_DURATION_OPTIONS = [
+  { value: '', label: 'Select duration' },
+  { value: 'less_than_1_year', label: 'Less than 1 year' },
+  { value: '1_2_years', label: '1 – 2 years' },
+  { value: '3_5_years', label: '3 – 5 years' },
+  { value: '6_10_years', label: '6 – 10 years' },
+  { value: 'over_10_years', label: 'Over 10 years' },
+]
+
 const SALARY_FREQUENCY_OPTIONS = [
   { value: 'monthly', label: 'Monthly' },
   { value: 'weekly', label: 'Weekly' },
@@ -135,6 +151,7 @@ export default function Apply() {
     employmentSector: '',
     employerName: '',
     jobTitle: '',
+    employmentDuration: '',
     salaryFrequency: 'monthly',
     monthlyIncome: '',
     monthlyExpenses: '',
@@ -156,6 +173,10 @@ export default function Apply() {
     coBorrowerEmploymentSector: '',
     coBorrowerEmployerName: '',
     coBorrowerMonthlyIncome: '',
+
+    // Personal
+    dateOfBirth: '',
+    gender: '',
 
     // Identity & media
     bvn: '',
@@ -410,6 +431,8 @@ export default function Apply() {
               <Input label="Full name" type="text" placeholder="e.g. Adekunle Johnson" value={formData.fullName} onChange={(e) => handleChange('fullName', e.target.value)} onBlur={() => setErrors((prev) => ({ ...prev, ...validateStep(1, formData) }))} error={errors.fullName} required />
               <Input label="Phone number" type="tel" placeholder="0801 234 5678" value={formData.phone} onChange={(e) => handleChange('phone', e.target.value)} onBlur={() => { setErrors((prev) => ({ ...prev, ...validateStep(1, formData) })); checkExistingApplications(formData.phone) }} error={errors.phone} required />
               <Input label="Email (optional)" type="email" placeholder="name@example.com" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} onBlur={() => setErrors((prev) => ({ ...prev, ...validateStep(1, formData) }))} error={errors.email} />
+              <Input label="Date of birth" type="date" value={formData.dateOfBirth} onChange={(e) => handleChange('dateOfBirth', e.target.value)} error={errors.dateOfBirth} required />
+              <Select label="Gender" options={GENDER_OPTIONS} value={formData.gender} onChange={(e) => handleChange('gender', e.target.value)} error={errors.gender} required />
 
               {existingApplications.length > 0 && !existingWarningDismissed && (
                 <div style={{ gridColumn: '1 / -1', background: '#fffbeb', border: '1.5px solid #f59e0b', borderRadius: '8px', padding: '12px 16px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
@@ -821,7 +844,12 @@ export default function Apply() {
                 <>
                   <Input label="Employer name" type="text" placeholder="e.g. Federal Ministry of Health" value={formData.employerName} onChange={(e) => handleChange('employerName', e.target.value)} error={errors.employerName} required />
                   <Input label="Job title (optional)" type="text" placeholder="e.g. Senior Accountant" value={formData.jobTitle} onChange={(e) => handleChange('jobTitle', e.target.value)} />
+                  <Select label="How long have you worked there?" options={EMPLOYMENT_DURATION_OPTIONS} value={formData.employmentDuration} onChange={(e) => handleChange('employmentDuration', e.target.value)} error={errors.employmentDuration} required />
                 </>
+              )}
+
+              {formData.employmentSector === 'self-employed' && (
+                <Select label="How long have you been self-employed?" options={EMPLOYMENT_DURATION_OPTIONS} value={formData.employmentDuration} onChange={(e) => handleChange('employmentDuration', e.target.value)} error={errors.employmentDuration} required />
               )}
 
               <Select label="Salary frequency" options={SALARY_FREQUENCY_OPTIONS} value={formData.salaryFrequency} onChange={(e) => handleChange('salaryFrequency', e.target.value)} />
