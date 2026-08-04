@@ -450,6 +450,22 @@ export const adminService = {
     })
   },
 
+  verifyBvnForLoan: async (loanId) => {
+    requireBackendFeature('BVN verification')
+    const trimmed = assertBackendLoanId(loanId, 'BVN verification')
+    return adminRequest(`/admin/loan-applications/${trimmed}/mono/verify-bvn`, {
+      method: 'POST',
+    })
+  },
+
+  fetchMonoStatementForLoan: async (loanId) => {
+    requireBackendFeature('Mono statement fetch')
+    const trimmed = assertBackendLoanId(loanId, 'Mono statement fetch')
+    return adminRequest(`/admin/loan-applications/${trimmed}/mono/fetch-transactions`, {
+      method: 'POST',
+    })
+  },
+
   createMonoDirectDebitCustomerForLoan: async (loanId, payload = {}) => {
     if (USE_BACKEND) {
       const trimmed = assertBackendLoanId(loanId, 'Mono direct debit customer')

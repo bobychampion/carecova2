@@ -151,7 +151,7 @@ export default function CustomerLoanDetail() {
       <div className="customer-loan-detail-header">
         <Link to="/portal/loans" className="customer-loan-detail-back">← My loans</Link>
         <h1 className="customer-loan-detail-title">Application {loan.id}</h1>
-        <StatusBadge status={loan.status} />
+        <StatusBadge status={loan.status} context="customer" />
       </div>
 
       {isApproved && (

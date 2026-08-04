@@ -1363,6 +1363,12 @@
   color: #991b1b;
 }
 
+.status--incomplete,
+.status-badge--incomplete {
+  background: #fff7ed;
+  color: #9a3412;
+}
+
 .status--financing-available,
 .status-badge--financing-available {
   background: #f0fdf4;

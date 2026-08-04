@@ -89,7 +89,7 @@ export function getStageLabel(loan) {
   return '—'
 }
 
-export function getStatusBadgeConfig(status, financingStatus) {
+export function getStatusBadgeConfig(status, financingStatus, viewContext = 'admin') {
   if (financingStatus === FINANCING_STATUS.AVAILABLE_FOR_FINANCING) {
     return { label: 'Available for Financing', icon: '●', className: 'status--financing-available' }
   }
@@ -106,17 +106,50 @@ export function getStatusBadgeConfig(status, financingStatus) {
     return { label: 'Financing Declined', icon: '✗', className: 'status--financing-declined' }
   }
 
+  if (viewContext === 'customer') {
+    switch (status) {
+      case APPLICATION_STATUS.SUBMITTED:
+        return { label: 'Application received', icon: '●', className: 'status--pending' }
+      case APPLICATION_STATUS.PENDING:
+        return { label: 'Under initial review', icon: '●', className: 'status--pending' }
+      case APPLICATION_STATUS.PENDING_STAGE1:
+        return { label: 'Under review', icon: '●', className: 'status--pending' }
+      case APPLICATION_STATUS.PENDING_ADMIN_REVIEW:
+        return { label: 'Under review', icon: '●', className: 'status--pending' }
+      case APPLICATION_STATUS.INCOMPLETE:
+        return { label: 'Action required — check your email', icon: '!', className: 'status--incomplete' }
+      case APPLICATION_STATUS.APPROVED:
+        return { label: 'Approved — awaiting disbursement', icon: '✓', className: 'status--approved' }
+      case APPLICATION_STATUS.APPROVED_FOR_DISBURSEMENT:
+        return { label: 'Being processed', icon: '✓', className: 'status--approved' }
+      case APPLICATION_STATUS.ACTIVE:
+        return { label: 'Loan active', icon: '●', className: 'status--active' }
+      case APPLICATION_STATUS.COMPLETED:
+        return { label: 'Loan completed', icon: '★', className: 'status--completed' }
+      case APPLICATION_STATUS.SALES_REJECTED:
+      case APPLICATION_STATUS.ADMIN_REJECTED:
+      case APPLICATION_STATUS.REJECTED:
+        return { label: 'Not approved at this time', icon: '✗', className: 'status--rejected' }
+      default:
+        return { label: 'Under review', icon: '●', className: 'status--pending' }
+    }
+  }
+
   switch (status) {
     case APPLICATION_STATUS.SUBMITTED:
+      return { label: 'Submitted', icon: '●', className: 'status--pending' }
     case APPLICATION_STATUS.PENDING:
-    case APPLICATION_STATUS.PENDING_STAGE1:
-    case APPLICATION_STATUS.INCOMPLETE:
       return { label: 'Pending', icon: '●', className: 'status--pending' }
+    case APPLICATION_STATUS.PENDING_STAGE1:
+      return { label: 'Pending Stage 1', icon: '●', className: 'status--pending' }
+    case APPLICATION_STATUS.INCOMPLETE:
+      return { label: 'Incomplete', icon: '!', className: 'status--incomplete' }
     case APPLICATION_STATUS.PENDING_ADMIN_REVIEW:
       return { label: 'Pending Admin Review', icon: '●', className: 'status--pending' }
     case APPLICATION_STATUS.SALES_REJECTED:
       return { label: 'Sales Rejected', icon: '✗', className: 'status--rejected' }
     case APPLICATION_STATUS.ADMIN_REJECTED:
+      return { label: 'Admin Rejected', icon: '✗', className: 'status--rejected' }
     case APPLICATION_STATUS.REJECTED:
       return { label: 'Rejected', icon: '✗', className: 'status--rejected' }
     case APPLICATION_STATUS.APPROVED:
@@ -128,7 +161,7 @@ export function getStatusBadgeConfig(status, financingStatus) {
     case APPLICATION_STATUS.COMPLETED:
       return { label: 'Completed', icon: '★', className: 'status--completed' }
     default:
-      return { label: status || 'Pending', icon: '●', className: 'status--pending' }
+      return { label: status || 'Unknown', icon: '●', className: 'status--pending' }
   }
 }
 

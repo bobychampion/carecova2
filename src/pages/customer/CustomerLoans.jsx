@@ -100,7 +100,7 @@ export default function CustomerLoans() {
                       {loan.hospital || 'Hospital not set'} • {loan.treatmentCategory || 'Treatment'}
                     </div>
                   </div>
-                  <StatusBadge status={loan.status} />
+                  <StatusBadge status={loan.status} context="customer" />
                 </div>
                 <div className="customer-loans-card-body">
                   <div className="customer-loans-card-row">

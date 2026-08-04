@@ -1,249 +1,219 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useAuth } from '../../../hooks/useAuth'
+import { adminService } from '../../../services/adminService'
 import MonoConnectionCard from './MonoConnectionCard'
 
 export default function VerificationRisk({
-    loan,
-    onInitiateMonoConnect,
-    onRefreshMonoStatus,
-    monoInitiating = false,
-    monoRefreshing = false,
-    monoFeedbackMessage = '',
-    monoFeedbackError = '',
+  loan,
+  onInitiateMonoConnect,
+  onRefreshMonoStatus,
+  monoInitiating = false,
+  monoRefreshing = false,
+  monoFeedbackMessage = '',
+  monoFeedbackError = '',
+  onUpdated,
 }) {
-    const { session } = useAuth()
-    // Add feature flag for Mock/Simulation mode
-    const [isDevMode, setIsDevMode] = useState(true);
+  const { session } = useAuth()
+  const [bvnVerifying, setBvnVerifying] = useState(false)
+  const [bvnError, setBvnError] = useState('')
 
-    // Mock external verification states local to this UI for demo
-    const [extStatus, setExtStatus] = useState({
-        identity: loan.verificationStatus?.identity || 'Pending',
-        credit: loan.verificationStatus?.credit || 'Pending',
-        banking: loan.verificationStatus?.banking || 'Pending',
-        payroll: loan.verificationStatus?.payroll || 'Not run'
-    })
+  const { affordability } = loan
+  const internalMetrics = loan.internalRiskMetrics || loan.affordability || {}
+  const dtiPct = internalMetrics.affordabilityRatio
+    ? Math.round(internalMetrics.affordabilityRatio * 100)
+    : affordability?.installmentToIncomePct || 0
+  const sector = loan.employmentSector || loan.employmentType
+  const isGov = sector === 'government'
+  const isPrivate = sector === 'private'
 
-    // Set default payroll to not run if not applicable
-    useEffect(() => {
-        const sector = loan.employmentSector || loan.employmentType;
-        if (sector !== 'government' && extStatus.payroll === 'Pending') {
-            setExtStatus(s => ({ ...s, payroll: 'N/A' }))
-        }
-    }, [loan])
+  const bvnResult = loan.bvnVerification
+  const bvnVerifiedAt = bvnResult?.verifiedAt
+  const bvnMatchStatus = bvnResult?.data?.name
+    ? `Name on file: ${bvnResult.data.name}`
+    : bvnResult?.message || null
 
-    const handleSimulate = (key, value) => {
-        if (!isDevMode) return;
-        setExtStatus(prev => ({ ...prev, [key]: value }))
+  const handleVerifyBvn = async () => {
+    setBvnVerifying(true)
+    setBvnError('')
+    try {
+      const updated = await adminService.verifyBvnForLoan(loan.id)
+      if (onUpdated) onUpdated(updated)
+    } catch (err) {
+      setBvnError(err.message || 'BVN verification failed')
+    } finally {
+      setBvnVerifying(false)
     }
+  }
 
-    const { affordability, riskFlags } = loan
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-    // Helper for Repayment Security layer logic
-    const sector = loan.employmentSector || loan.employmentType;
-    const isGov = sector === 'government';
-    const isPrivate = sector === 'private';
-
-    // Safely extract risk metrics
-    const internalMetrics = loan.internalRiskMetrics || loan.affordability || {};
-    const dtiPct = internalMetrics.affordabilityRatio ? Math.round(internalMetrics.affordabilityRatio * 100) : (affordability?.installmentToIncomePct || 0);
-
-    return (
-        <div className="detail-column column-verification bg-sage-light">
-            {session?.role !== 'sales' && (
-                <MonoConnectionCard
-                    loan={loan}
-                    initiating={monoInitiating}
-                    refreshing={monoRefreshing}
-                    onInitiate={onInitiateMonoConnect}
-                    onRefresh={onRefreshMonoStatus}
-                    feedbackMessage={monoFeedbackMessage}
-                    feedbackError={monoFeedbackError}
-                />
-            )}
-
-            <div className="detail-section-title">Internal Checkers (System Computed)</div>
-
-            <div className="detail-card border-left-primary">
-                <h2>Repayment Security & Route</h2>
-                <div className="route-path" style={{ marginBottom: '10px' }}>
-                    <div className="route-step">
-                        <div className="route-label">Sector</div>
-                        <div className="route-value capitalize font-bold">{sector || 'Unknown'}</div>
-                    </div>
-                    <div className="route-arrow">→</div>
-                    <div className="route-step">
-                        <div className="route-label">Primary Route</div>
-                        <div className="route-value font-bold text-primary">
-                            {isGov ? 'Salary Deduction' : isPrivate ? 'Bank Direct Debit' : 'Card / Direct Debit'}
-                        </div>
-                    </div>
-                </div>
-
-                <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '4px', fontSize: '0.85rem' }}>
-                    <strong>Security Policy:</strong>
-                    {isGov ? (
-                        <p style={{ margin: '4px 0 0 0' }}>Salary deduction is primary; no collateral required.</p>
-                    ) : isPrivate ? (
-                        <p style={{ margin: '4px 0 0 0' }}>Bank debit is primary; co-borrower recommended for higher risk.</p>
-                    ) : (
-                        <p style={{ margin: '4px 0 0 0' }}>Bank debit/card primary; collateral or guarantor strictly required.</p>
-                    )}
-                </div>
-
-                <div className="text-xs text-muted mt-3">
-                    <strong>User requested method:</strong> <span className="capitalize">{loan.repaymentMethod?.replace('_', ' ') || 'Unknown'}</span>
-                </div>
-
-                <div className="security-placeholders" style={{ marginTop: '15px', borderTop: '1px solid #e2e8f0', paddingTop: '10px' }}>
-                    <h4 style={{ fontSize: '0.8rem', margin: '0 0 5px 0', textTransform: 'uppercase', color: '#64748b' }}>Secondary Security</h4>
-                    <div style={{ display: 'flex', gap: '8px', fontSize: '0.8rem' }}>
-                        <span className={`badge ${loan.coBorrower ? 'badge-success' : 'badge-neutral'}`}>
-                            {loan.coBorrower ? '✓ Co-Borrower Present' : 'No Co-Borrower'}
-                        </span>
-                        <span className="badge badge-neutral">No Collateral</span>
-                        <span className="badge badge-neutral">No Verifiable Income Evidence</span>
-                    </div>
-                </div>
+      {/* ── BVN Verification (Mono Lookup — independent) ── */}
+      <div className="detail-card" style={{ borderLeft: '4px solid #6366f1' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+          <div>
+            <h2 style={{ marginBottom: '4px' }}>Identity Verification</h2>
+            <div style={{ fontSize: '0.8125rem', color: '#6b7280' }}>
+              BVN on application: <strong style={{ color: '#111827', fontFamily: 'monospace' }}>{loan.bvn || 'Not provided'}</strong>
             </div>
-
-            <div className="detail-card border-left-indicator">
-                <div className="flex-between">
-                    <h2>Affordability Assessment</h2>
-                    <span className={`affordability-tag ${internalMetrics.riskLevel === 'HIGH' ? 'tight' : internalMetrics.riskLevel === 'MEDIUM' ? 'fair' : 'comfortable'}`}>
-                        {internalMetrics.riskLevel || 'Unknown'}
-                    </span>
-                </div>
-
-                <div className="metrics-list mt-3">
-                    <div className="metric-row">
-                        <div className="metric-labels">
-                            <span>Installment to Income (DTI)</span>
-                            <span className="font-bold">{dtiPct}%</span>
-                        </div>
-                        <div className="progress-bar">
-                            <div
-                                className={`progress-fill ${dtiPct > 35 ? 'danger' : dtiPct > 20 ? 'warning' : 'success'}`}
-                                style={{ width: `${Math.min(100, dtiPct)}%` }}
-                            />
-                        </div>
-                        <div className="text-xs text-muted mt-1">Est. ₦{(internalMetrics.estimatedInstallment || 0).toLocaleString()}/mo vs ₦{((loan.monthlyIncome || 0)).toLocaleString()} income</div>
-                    </div>
-
-                    <div className="metric-row mt-3">
-                        <div className="metric-labels">
-                            <span>Expense to Income</span>
-                            <span className="font-bold">{loan.monthlyIncome ? Math.round(((loan.monthlyExpenses || 0) / loan.monthlyIncome) * 100) : 0}%</span>
-                        </div>
-                        <div className="progress-bar">
-                            <div
-                                className={`progress-fill ${((loan.monthlyExpenses || 0) / (loan.monthlyIncome || 1)) > 0.8 ? 'danger' : ((loan.monthlyExpenses || 0) / (loan.monthlyIncome || 1)) > 0.6 ? 'warning' : 'success'}`}
-                                style={{ width: `${Math.min(100, ((loan.monthlyExpenses || 0) / (loan.monthlyIncome || 1)) * 100)}%` }}
-                            />
-                        </div>
-                        <div className="text-xs text-muted mt-1">Stated expenses: ₦{(loan.monthlyExpenses || 0).toLocaleString()}</div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="detail-card">
-                <h2>Internal Risk Flags</h2>
-                {(!internalMetrics.riskReasons || internalMetrics.riskReasons.length === 0) ? (
-                    <div className="text-success font-medium text-sm flex items-center gap-2">
-                        <span>✓</span> No internal risk flags triggered
-                    </div>
-                ) : (
-                    <div className="flags-list">
-                        {internalMetrics.riskReasons.map((flag, idx) => (
-                            <div key={idx} className={`alert-box alert-${internalMetrics.riskLevel === 'HIGH' ? 'error' : 'warning'}`}>
-                                {internalMetrics.riskLevel === 'HIGH' ? '⚠️' : 'ℹ️'} {flag}
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {/* EXTERNAL API SIMULATORS */}
-            <div className="detail-section-title mt-6 flex-between">
-                <span>External Verification (Mock APIs)</span>
-                <label style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
-                    <input type="checkbox" checked={isDevMode} onChange={e => setIsDevMode(e.target.checked)} />
-                    Dev Toggle
-                </label>
-            </div>
-
-            <div className={`detail-card external-checkers ${!isDevMode ? 'opacity-70' : ''}`}>
-                <div className="mock-checker-row">
-                    <div className="checker-info">
-                        <div className="checker-name">Dojah KYC</div>
-                        <div className="checker-desc">Identity & BVN match</div>
-                    </div>
-                    <select
-                        className={`checker-select status-${extStatus.identity.toLowerCase()}`}
-                        value={extStatus.identity}
-                        onChange={(e) => handleSimulate('identity', e.target.value)}
-                        disabled={!isDevMode}
-                    >
-                        <option value="Pending">Pending</option>
-                        <option value="Passed">Passed</option>
-                        <option value="Failed">Failed</option>
-                    </select>
-                </div>
-
-                <div className="mock-checker-row">
-                    <div className="checker-info">
-                        <div className="checker-name">FirstCentral</div>
-                        <div className="checker-desc">Credit bureau check</div>
-                    </div>
-                    <select
-                        className={`checker-select status-${extStatus.credit.toLowerCase()}`}
-                        value={extStatus.credit}
-                        onChange={(e) => handleSimulate('credit', e.target.value)}
-                        disabled={!isDevMode}
-                    >
-                        <option value="Pending">Pending</option>
-                        <option value="Good">Good Standing</option>
-                        <option value="Poor">Poor History</option>
-                        <option value="No History">No History</option>
-                    </select>
-                </div>
-
-                <div className="mock-checker-row">
-                    <div className="checker-info">
-                        <div className="checker-name">Mono</div>
-                        <div className="checker-desc">Bank statement analysis</div>
-                    </div>
-                    <select
-                        className={`checker-select status-${extStatus.banking.toLowerCase()}`}
-                        value={extStatus.banking}
-                        onChange={(e) => handleSimulate('banking', e.target.value)}
-                        disabled={!isDevMode}
-                    >
-                        <option value="Pending">Pending</option>
-                        <option value="Consistent">Income Matched</option>
-                        <option value="Inconsistent">Inconsistent</option>
-                        <option value="Failed">Failed connect</option>
-                    </select>
-                </div>
-
-                <div className="mock-checker-row">
-                    <div className="checker-info">
-                        <div className="checker-name">Remita</div>
-                        <div className="checker-desc">Federal payroll check</div>
-                    </div>
-                    <select
-                        className={`checker-select status-${extStatus.payroll.toLowerCase().replace(' ', '-')}`}
-                        value={extStatus.payroll}
-                        onChange={(e) => handleSimulate('payroll', e.target.value)}
-                        disabled={!isDevMode || (!isGov && loan.employmentType !== 'salaried')}
-                    >
-                        <option value="Not run">Not run</option>
-                        <option value="N/A">N/A</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Verified">Verified</option>
-                        <option value="Not Found">Not Found</option>
-                    </select>
-                </div>
-            </div>
+          </div>
+          {bvnResult ? (
+            <span style={{ background: '#dcfce7', color: '#166534', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+              Verified
+            </span>
+          ) : (
+            <span style={{ background: '#f1f5f9', color: '#64748b', fontWeight: 600, padding: '3px 10px', borderRadius: '12px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+              Not verified
+            </span>
+          )}
         </div>
-    )
+
+        {bvnResult && (
+          <div style={{ marginTop: '10px', padding: '10px', background: '#f0fdf4', borderRadius: '6px', fontSize: '0.8125rem' }}>
+            {bvnMatchStatus && <div style={{ marginBottom: '4px' }}>{bvnMatchStatus}</div>}
+            {bvnVerifiedAt && (
+              <div style={{ color: '#6b7280' }}>Verified at {new Date(bvnVerifiedAt).toLocaleString()}</div>
+            )}
+          </div>
+        )}
+
+        {bvnError && (
+          <div className="alert-box alert-error" style={{ marginTop: '10px', fontSize: '0.8125rem' }}>{bvnError}</div>
+        )}
+
+        <div style={{ marginTop: '12px' }}>
+          <button
+            onClick={handleVerifyBvn}
+            disabled={bvnVerifying || !loan.bvn}
+            style={{
+              padding: '7px 16px', borderRadius: '7px', border: '1.5px solid',
+              borderColor: loan.bvn ? '#6366f1' : '#d1d5db',
+              background: loan.bvn ? '#eef2ff' : '#f9fafb',
+              color: loan.bvn ? '#4338ca' : '#9ca3af',
+              fontWeight: 600, fontSize: '0.8125rem',
+              cursor: (bvnVerifying || !loan.bvn) ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {bvnVerifying ? 'Verifying…' : bvnResult ? 'Re-verify BVN' : 'Verify BVN'}
+            {loan.bvn && <span style={{ fontWeight: 400, marginLeft: '6px', color: '#9ca3af', fontSize: '0.75rem' }}>₦45</span>}
+          </button>
+          {!loan.bvn && (
+            <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '4px' }}>
+              Add BVN to the applicant identity card first
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Mono Connect (bank account — independent of BVN) ── */}
+      {session?.role !== 'sales' && (
+        <MonoConnectionCard
+          loan={loan}
+          initiating={monoInitiating}
+          refreshing={monoRefreshing}
+          onInitiate={onInitiateMonoConnect}
+          onRefresh={onRefreshMonoStatus}
+          feedbackMessage={monoFeedbackMessage}
+          feedbackError={monoFeedbackError}
+          onStatementFetched={onUpdated ? () => onUpdated(null) : undefined}
+        />
+      )}
+
+      {/* ── Repayment Security ── */}
+      <div className="detail-card">
+        <h2>Repayment Security</h2>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', margin: '10px 0', flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Sector</div>
+            <div style={{ fontWeight: 700, textTransform: 'capitalize' }}>{sector || 'Unknown'}</div>
+          </div>
+          <div style={{ color: '#9ca3af' }}>→</div>
+          <div>
+            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Primary Route</div>
+            <div style={{ fontWeight: 700, color: '#2563eb' }}>
+              {isGov ? 'Salary Deduction' : isPrivate ? 'Bank Direct Debit' : 'Card / Direct Debit'}
+            </div>
+          </div>
+        </div>
+        <div style={{ background: '#f8fafc', padding: '8px 12px', borderRadius: '6px', fontSize: '0.8125rem', marginBottom: '10px' }}>
+          {isGov
+            ? 'Salary deduction is primary; no collateral required.'
+            : isPrivate
+              ? 'Bank debit is primary; co-borrower recommended for higher risk.'
+              : 'Bank debit/card primary; collateral or guarantor strictly required.'}
+        </div>
+        <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+          Requested method: <span style={{ textTransform: 'capitalize', color: '#374151', fontWeight: 600 }}>{loan.repaymentMethod?.replace('_', ' ') || 'Unknown'}</span>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
+          <span className={`badge ${loan.coBorrower ? 'badge-success' : 'badge-neutral'}`}>
+            {loan.coBorrower ? '✓ Co-borrower' : 'No co-borrower'}
+          </span>
+          <span className="badge badge-neutral">No collateral</span>
+        </div>
+      </div>
+
+      {/* ── Affordability Assessment ── */}
+      <div className="detail-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2>Affordability Assessment</h2>
+          <span className={`affordability-tag ${internalMetrics.riskLevel === 'HIGH' ? 'tight' : internalMetrics.riskLevel === 'MEDIUM' ? 'fair' : 'comfortable'}`}>
+            {internalMetrics.riskLevel || 'Unknown'}
+          </span>
+        </div>
+        <div style={{ marginTop: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem', marginBottom: '4px' }}>
+            <span>Installment to income (DTI)</span>
+            <strong>{dtiPct}%</strong>
+          </div>
+          <div className="progress-bar">
+            <div
+              className={`progress-fill ${dtiPct > 35 ? 'danger' : dtiPct > 20 ? 'warning' : 'success'}`}
+              style={{ width: `${Math.min(100, dtiPct)}%` }}
+            />
+          </div>
+          <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px' }}>
+            Est. ₦{(internalMetrics.estimatedInstallment || 0).toLocaleString()}/mo vs ₦{(loan.monthlyIncome || 0).toLocaleString()} stated income
+          </div>
+        </div>
+
+        {loan.monthlyIncome ? (
+          <div style={{ marginTop: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem', marginBottom: '4px' }}>
+              <span>Expense to income</span>
+              <strong>{Math.round(((loan.monthlyExpenses || 0) / loan.monthlyIncome) * 100)}%</strong>
+            </div>
+            <div className="progress-bar">
+              <div
+                className={`progress-fill ${((loan.monthlyExpenses || 0) / loan.monthlyIncome) > 0.8 ? 'danger' : ((loan.monthlyExpenses || 0) / loan.monthlyIncome) > 0.6 ? 'warning' : 'success'}`}
+                style={{ width: `${Math.min(100, ((loan.monthlyExpenses || 0) / loan.monthlyIncome) * 100)}%` }}
+              />
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px' }}>
+              Stated expenses: ₦{(loan.monthlyExpenses || 0).toLocaleString()}
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      {/* ── Internal Risk Flags ── */}
+      <div className="detail-card">
+        <h2>Internal Risk Flags</h2>
+        {(!internalMetrics.riskReasons || internalMetrics.riskReasons.length === 0) ? (
+          <div style={{ color: '#059669', fontWeight: 600, fontSize: '0.875rem', display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <span>✓</span> No internal risk flags triggered
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {internalMetrics.riskReasons.map((flag, idx) => (
+              <div key={idx} className={`alert-box alert-${internalMetrics.riskLevel === 'HIGH' ? 'error' : 'warning'}`}>
+                {internalMetrics.riskLevel === 'HIGH' ? '⚠️' : 'ℹ️'} {flag}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+    </div>
+  )
 }

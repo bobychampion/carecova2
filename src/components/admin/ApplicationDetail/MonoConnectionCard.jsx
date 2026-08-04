@@ -1,157 +1,198 @@
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { adminService } from '../../../services/adminService'
 
-const MONO_STATUS_META = {
-    not_started: {
-        label: 'Not started',
-        color: '#64748b',
-        description: 'Mono authentication has not been initiated for this applicant.',
-    },
-    pending: {
-        label: 'Pending user action',
-        color: '#f59e0b',
-        description: 'Connect link was sent. Waiting for the applicant to complete linking.',
-    },
-    linked: {
-        label: 'Linked',
-        color: '#10b981',
-        description: 'User account is linked and ready for Mono data requests.',
-    },
+const STATUS_META = {
+  not_started: {
+    label: 'Not linked',
+    color: '#64748b',
+    description: 'No bank account linked yet. Send the connect link to the applicant.',
+  },
+  pending: {
+    label: 'Awaiting applicant',
+    color: '#f59e0b',
+    description: 'Connect link sent. Waiting for the applicant to complete bank linking.',
+  },
+  linked: {
+    label: 'Linked',
+    color: '#10b981',
+    description: 'Bank account is linked. You can now fetch the statement.',
+  },
 }
 
-const formatDateTime = (value) => {
-    if (!value) return '—'
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return '—'
-    return date.toLocaleString()
+const fmt = (value) => {
+  if (!value) return '—'
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString()
 }
 
 export default function MonoConnectionCard({
-    loan,
-    initiating = false,
-    refreshing = false,
-    onInitiate,
-    onRefresh,
-    feedbackMessage = '',
-    feedbackError = '',
+  loan,
+  initiating = false,
+  refreshing = false,
+  onInitiate,
+  onRefresh,
+  feedbackMessage = '',
+  feedbackError = '',
+  onStatementFetched,
 }) {
-    const navigate = useNavigate()
-    const statusKey = loan.monoConnectionStatus || 'not_started'
-    const statusMeta = MONO_STATUS_META[statusKey] || MONO_STATUS_META.not_started
-    const hasUserEmail = Boolean(loan.email)
-    const incomeProfile = loan.monoIncomeProfile || {}
+  const [fetching, setFetching] = useState(false)
+  const [fetchResult, setFetchResult] = useState(null)
+  const [fetchError, setFetchError] = useState('')
 
-    return (
-        <div className="detail-card" style={{ borderLeft: `4px solid ${statusMeta.color}` }}>
-            <div className="flex-between" style={{ gap: 12, alignItems: 'center' }}>
-                <div>
-                    <h2 style={{ marginBottom: 4 }}>Mono Account Link</h2>
-                    <div style={{ color: '#475569', fontSize: '0.86rem' }}>{statusMeta.description}</div>
-                </div>
-                <span
-                    className="badge"
-                    style={{
-                        background: `${statusMeta.color}22`,
-                        color: statusMeta.color,
-                        fontWeight: 700,
-                    }}
-                >
-                    {statusMeta.label}
-                </span>
-            </div>
+  const statusKey = loan.monoConnectionStatus || 'not_started'
+  const meta = STATUS_META[statusKey] || STATUS_META.not_started
+  const hasEmail = Boolean(loan.email)
 
-            {!hasUserEmail ? (
-                <div className="alert-box alert-warning mt-3">
-                    User email is missing. Add an email before sending Mono connect link.
-                </div>
-            ) : null}
+  const transactionCache = loan.monoInformedDecisionCache?.sections?.transactions
+  const alreadyFetched = Boolean(transactionCache)
+  const txCount = transactionCache?.count ?? null
 
-            {feedbackMessage ? (
-                <div className="alert-box alert-success mt-3">{feedbackMessage}</div>
-            ) : null}
-            {feedbackError ? (
-                <div className="alert-box alert-error mt-3">{feedbackError}</div>
-            ) : null}
+  const handleFetchStatement = async () => {
+    setFetching(true)
+    setFetchError('')
+    setFetchResult(null)
+    try {
+      const res = await adminService.fetchMonoStatementForLoan(loan.id)
+      setFetchResult(res)
+      if (onStatementFetched) onStatementFetched()
+    } catch (err) {
+      setFetchError(err.message || 'Failed to fetch bank statement')
+    } finally {
+      setFetching(false)
+    }
+  }
 
-            <div className="info-grid mt-3">
-                <div className="info-group">
-                    <div className="info-label">Account ID</div>
-                    <div className="info-value font-mono">{loan.monoAccountId || '—'}</div>
-                </div>
-                <div className="info-group">
-                    <div className="info-label">Reference</div>
-                    <div className="info-value font-mono">{loan.monoConnectReference || '—'}</div>
-                </div>
-                <div className="info-group">
-                    <div className="info-label">Initiated At</div>
-                    <div className="info-value">{formatDateTime(loan.monoConnectInitiatedAt)}</div>
-                </div>
-                <div className="info-group">
-                    <div className="info-label">Email Sent At</div>
-                    <div className="info-value">{formatDateTime(loan.monoConnectEmailSentAt)}</div>
-                </div>
-                <div className="info-group">
-                    <div className="info-label">Linked At</div>
-                    <div className="info-value">{formatDateTime(loan.monoLinkedAt)}</div>
-                </div>
-            </div>
-
-            <div className="mt-3" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button
-                    className="button button--primary"
-                    onClick={onInitiate}
-                    disabled={!hasUserEmail || initiating}
-                >
-                    {initiating
-                        ? 'Sending link...'
-                        : statusKey === 'pending'
-                            ? 'Resend Connect Link'
-                            : statusKey === 'linked'
-                                ? 'Send Reconnect Link'
-                                : 'Send Connect Link'}
-                </button>
-                <button
-                    className="button button--secondary"
-                    onClick={onRefresh}
-                    disabled={refreshing}
-                >
-                    {refreshing ? 'Refreshing...' : 'Refresh Status'}
-                </button>
-                <button
-                    className="button button--secondary"
-                    onClick={() => navigate(`/admin/applications/${loan.id || loan._id}/informed-decision`)}
-                    disabled={!loan.monoAccountId}
-                >
-                    Informed Decision
-                </button>
-            </div>
-
-            {statusKey === 'linked' ? (
-                <div className="mt-4" style={{ borderTop: '1px solid #e2e8f0', paddingTop: 12 }}>
-                    <h3 style={{ margin: '0 0 8px 0' }}>Linked Account Details</h3>
-                    <div className="info-grid">
-                        <div className="info-group">
-                            <div className="info-label">Account Name</div>
-                            <div className="info-value">{incomeProfile.accountName || '—'}</div>
-                        </div>
-                        <div className="info-group">
-                            <div className="info-label">Account Number</div>
-                            <div className="info-value">{incomeProfile.accountNumber || '—'}</div>
-                        </div>
-                        <div className="info-group">
-                            <div className="info-label">Employer</div>
-                            <div className="info-value">{incomeProfile.employer || '—'}</div>
-                        </div>
-                        <div className="info-group">
-                            <div className="info-label">Monthly Income</div>
-                            <div className="info-value">
-                                {typeof incomeProfile.monthlyIncome === 'number'
-                                    ? `₦${incomeProfile.monthlyIncome.toLocaleString()}`
-                                    : '—'}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            ) : null}
+  return (
+    <div className="detail-card" style={{ borderLeft: `4px solid ${meta.color}` }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+        <div>
+          <h2 style={{ marginBottom: '4px' }}>Bank Account Link</h2>
+          <div style={{ color: '#475569', fontSize: '0.86rem' }}>{meta.description}</div>
         </div>
-    )
+        <span style={{
+          background: `${meta.color}22`, color: meta.color,
+          fontWeight: 700, padding: '3px 10px', borderRadius: '12px', fontSize: '0.8rem', whiteSpace: 'nowrap',
+        }}>
+          {meta.label}
+        </span>
+      </div>
+
+      {!hasEmail && (
+        <div className="alert-box alert-warning mt-3">
+          User email is missing — add an email before sending the connect link.
+        </div>
+      )}
+      {feedbackMessage && <div className="alert-box alert-success mt-3">{feedbackMessage}</div>}
+      {feedbackError && <div className="alert-box alert-error mt-3">{feedbackError}</div>}
+
+      <div className="info-grid mt-3">
+        <div className="info-group">
+          <div className="info-label">Account ID</div>
+          <div className="info-value font-mono">{loan.monoAccountId || '—'}</div>
+        </div>
+        <div className="info-group">
+          <div className="info-label">Reference</div>
+          <div className="info-value font-mono">{loan.monoConnectReference || '—'}</div>
+        </div>
+        <div className="info-group">
+          <div className="info-label">Link Sent</div>
+          <div className="info-value">{fmt(loan.monoConnectEmailSentAt)}</div>
+        </div>
+        <div className="info-group">
+          <div className="info-label">Linked At</div>
+          <div className="info-value">{fmt(loan.monoLinkedAt)}</div>
+        </div>
+      </div>
+
+      {/* Linked account details */}
+      {statusKey === 'linked' && loan.monoIncomeProfile && (
+        <div style={{ marginTop: '12px', borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
+          <div className="info-grid">
+            <div className="info-group">
+              <div className="info-label">Account Name</div>
+              <div className="info-value">{loan.monoIncomeProfile.accountName || '—'}</div>
+            </div>
+            <div className="info-group">
+              <div className="info-label">Account Number</div>
+              <div className="info-value">{loan.monoIncomeProfile.accountNumber || '—'}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '16px' }}>
+        <button
+          className="button button--primary"
+          onClick={onInitiate}
+          disabled={!hasEmail || initiating}
+        >
+          {initiating
+            ? 'Sending…'
+            : statusKey === 'pending'
+              ? 'Resend Connect Link'
+              : statusKey === 'linked'
+                ? 'Send Reconnect Link'
+                : 'Send Connect Link'}
+        </button>
+        <button
+          className="button button--secondary"
+          onClick={onRefresh}
+          disabled={refreshing}
+        >
+          {refreshing ? 'Refreshing…' : 'Refresh Status'}
+        </button>
+      </div>
+
+      {/* Fetch Bank Statement — only shown when linked */}
+      {statusKey === 'linked' && (
+        <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <div>
+              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>Bank Statement</div>
+              {alreadyFetched && txCount !== null && (
+                <div style={{ fontSize: '0.8rem', color: '#10b981', marginTop: '2px' }}>
+                  Fetched — {txCount} transactions
+                </div>
+              )}
+              {alreadyFetched && txCount === null && (
+                <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '2px' }}>
+                  Previously fetched
+                </div>
+              )}
+              {!alreadyFetched && (
+                <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '2px' }}>
+                  Not yet fetched
+                </div>
+              )}
+            </div>
+            <button
+              onClick={handleFetchStatement}
+              disabled={fetching}
+              style={{
+                padding: '7px 14px', borderRadius: '7px', border: '1.5px solid',
+                borderColor: alreadyFetched ? '#d1d5db' : '#2563eb',
+                background: alreadyFetched ? '#f9fafb' : '#eff6ff',
+                color: alreadyFetched ? '#6b7280' : '#1d4ed8',
+                fontWeight: 600, fontSize: '0.8125rem',
+                cursor: fetching ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {fetching ? 'Fetching…' : alreadyFetched ? 'Re-fetch Statement' : 'Fetch Bank Statement'}
+            </button>
+          </div>
+          {fetchResult && (
+            <div className="alert-box alert-success" style={{ marginTop: '8px', fontSize: '0.8125rem' }}>
+              Statement fetched — {fetchResult.count ?? '?'} transactions retrieved
+            </div>
+          )}
+          {fetchError && (
+            <div className="alert-box alert-error" style={{ marginTop: '8px', fontSize: '0.8125rem' }}>
+              {fetchError}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }

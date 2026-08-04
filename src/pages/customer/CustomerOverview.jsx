@@ -84,7 +84,7 @@ export default function CustomerOverview() {
                 <Link to={`/portal/loans/${loan.id}`} className="customer-overview-list-item">
                   <span className="customer-overview-list-id">{loan.id}</span>
                   <span className="customer-overview-list-amount">{formatNaira(loan.approvedAmount || loan.estimatedCost || loan.requestedAmount)}</span>
-                  <StatusBadge status={loan.status} />
+                  <StatusBadge status={loan.status} context="customer" />
                 </Link>
               </li>
             ))}

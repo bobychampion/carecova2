@@ -176,92 +176,97 @@ export default function ApplicationDetail() {
     }
     if (error) return <div className="admin-page"><div className="alert-box alert-error">{error}</div><button className="button button--secondary mt-4" onClick={() => navigate('/admin/applications')}>← Back to Applications</button></div>
     if (!loan) return <div className="admin-page"><div className="alert-box alert-error">Application not found</div><button className="button button--secondary mt-4" onClick={() => navigate('/admin/applications')}>← Back to Applications</button></div>
-    const showDirectDebit = ['approved', 'active', 'overdue'].includes(loan.status) || loan.repaymentMethod === 'direct_debit'
-
     const salesCanDoStage1 =
         session?.role === 'sales' &&
         loan.assignedTo === session.username &&
         !(loan.stage1ApprovedBy || loan.stage1ApprovedAt)
 
+    const isSalesOwnedEarly =
+        session?.role === 'sales' &&
+        loan.assignedTo === session.username &&
+        (loan.status === 'pending' || loan.status === 'incomplete')
+
     return (
         <>
         <div className="admin-page">
-            <div className="admin-page-header flex-between align-center mb-5">
-                <div>
-                    <button className="back-link mb-2 text-sm text-primary font-bold bg-transparent border-none cursor-pointer" onClick={() => navigate('/admin/applications')}>
-                        ← Back to List
-                    </button>
-                    <div className="flex items-center gap-3">
-                        <h1 className="mb-0">
+
+            {/* ── Page header ── */}
+            <div style={{ marginBottom: '24px' }}>
+                <button
+                    className="back-link"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem', color: '#2563eb', fontWeight: 600, padding: '0', marginBottom: '12px', display: 'inline-block' }}
+                    onClick={() => navigate('/admin/applications')}
+                >
+                    ← Back to Applications
+                </button>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
+                    <div>
+                        <h1 style={{ margin: '0 0 6px', fontSize: '1.375rem', fontWeight: 700, color: '#111827' }}>
                             {loan.fullName || loan.patientName || 'Applicant'}
                         </h1>
-                        <StatusBadge status={loan.status} financingStatus={loan.financing_status} />
-                        <span className="stage-pill">{getStageLabel(loan)}</span>
-                    </div>
-                    <p className="text-xs text-muted mt-1">
-                      {loan.applicationCode && <span style={{ fontWeight: 700, color: '#1d4ed8', marginRight: '10px' }}>{loan.applicationCode}</span>}
-                      <span>ID: {loan.id}</span>
-                    </p>
-                    {loan.assignedTo && (
-                        <p className="text-sm mt-1">
-                            Assigned to:{' '}
-                            <strong>{loan.assignedTo === session?.username ? 'Me' : loan.assignedTo}</strong>
-                        </p>
-                    )}
-                    <p className="mt-1 text-xs text-muted">
-                        Submitted on {new Date(loan.submittedAt).toLocaleDateString()} at{' '}
-                        {new Date(loan.submittedAt).toLocaleTimeString()}
-                    </p>
-                </div>
-
-                <div className="flex gap-2">
-                    <button className={`tab-btn ${activeTab === 'review' ? 'active' : ''}`} onClick={() => setActiveTab('review')}>Review Details</button>
-                    <button className={`tab-btn ${activeTab === 'credit' ? 'active' : ''}`} onClick={() => setActiveTab('credit')}>Credit Review</button>
-                    <button className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>Audit History</button>
-                </div>
-                </div>
-
-                {loan.financing_status && (
-                    <div className="detail-card mt-4" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                        <h3 style={{ margin: '0 0 8px', fontSize: '0.9rem', fontWeight: 600 }}>Financing Status Overview</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-                            <div>
-                                <div className="text-xs text-muted">Status</div>
-                                <StatusBadge status={loan.status} financingStatus={loan.financing_status} />
-                            </div>
-                            {loan.reserved_by_financier_id && (
-                                <div>
-                                    <div className="text-xs text-muted">Reserved By</div>
-                                    <div className="text-sm font-medium">{loan.reserved_by_financier_id}</div>
-                                </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', fontSize: '0.8125rem', color: '#6b7280' }}>
+                            {loan.applicationCode && (
+                                <span style={{ fontWeight: 700, color: '#1d4ed8' }}>{loan.applicationCode}</span>
                             )}
-                            {loan.reserved_at && (
-                                <div>
-                                    <div className="text-xs text-muted">Reserved On</div>
-                                    <div className="text-sm font-medium">{new Date(loan.reserved_at).toLocaleDateString()}</div>
-                                </div>
-                            )}
-                            {loan.financing_amount && (
-                                <div>
-                                    <div className="text-xs text-muted">Financing Amount</div>
-                                    <div className="text-sm font-medium">₦{loan.financing_amount.toLocaleString()}</div>
-                                </div>
-                            )}
-                            {loan.financed_at && (
-                                <div>
-                                    <div className="text-xs text-muted">Financed On</div>
-                                    <div className="text-sm font-medium">{new Date(loan.financed_at).toLocaleDateString()}</div>
-                                </div>
+                            <span>ID: {loan.id}</span>
+                            <span>·</span>
+                            <span>Submitted {new Date(loan.submittedAt).toLocaleDateString()} at {new Date(loan.submittedAt).toLocaleTimeString()}</span>
+                            {loan.assignedTo && (
+                                <>
+                                    <span>·</span>
+                                    <span>Assigned to <strong style={{ color: '#374151' }}>{loan.assignedTo === session?.username ? 'Me' : loan.assignedTo}</strong></span>
+                                </>
                             )}
                         </div>
                     </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                        <StatusBadge status={loan.status} financingStatus={loan.financing_status} />
+                        <span className="stage-pill">{getStageLabel(loan)}</span>
+                    </div>
+                </div>
+
+                {/* Financing banner */}
+                {loan.financing_status && (
+                    <div style={{ marginTop: '12px', padding: '10px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', display: 'flex', flexWrap: 'wrap', gap: '20px', fontSize: '0.8125rem' }}>
+                        <span style={{ color: '#6b7280' }}>Financing:</span>
+                        <StatusBadge status={loan.status} financingStatus={loan.financing_status} />
+                        {loan.reserved_by_financier_id && <span><span style={{ color: '#6b7280' }}>Reserved by</span> {loan.reserved_by_financier_id}</span>}
+                        {loan.financing_amount && <span><span style={{ color: '#6b7280' }}>Amount</span> ₦{loan.financing_amount.toLocaleString()}</span>}
+                        {loan.financed_at && <span><span style={{ color: '#6b7280' }}>Financed</span> {new Date(loan.financed_at).toLocaleDateString()}</span>}
+                    </div>
                 )}
 
-            {activeTab === 'review' ? (
-                <div className="detail-layout-3col">
-                    <ApplicantSnapshot loan={loan} onUpdated={() => loadLoanDetails({ silent: true })} />
+                {/* Tabs */}
+                <div style={{ display: 'flex', gap: '4px', marginTop: '20px', borderBottom: '2px solid #e5e7eb', paddingBottom: '0' }}>
+                    {[
+                        { key: 'review', label: 'Review' },
+                        { key: 'credit', label: 'Credit & AI' },
+                        { key: 'history', label: 'Audit History' },
+                    ].map(({ key, label }) => (
+                        <button
+                            key={key}
+                            onClick={() => setActiveTab(key)}
+                            style={{
+                                background: 'none', border: 'none', cursor: 'pointer',
+                                padding: '8px 16px', fontSize: '0.875rem', fontWeight: 600,
+                                color: activeTab === key ? '#2563eb' : '#6b7280',
+                                borderBottom: activeTab === key ? '2px solid #2563eb' : '2px solid transparent',
+                                marginBottom: '-2px', borderRadius: '0', transition: 'color 0.15s',
+                            }}
+                        >
+                            {label}
+                        </button>
+                    ))}
+                </div>
+            </div>
 
-                    <div className="detail-column">
+            {/* ── Tab content ── */}
+            {activeTab === 'review' ? (
+                <div style={{ display: 'grid', gridTemplateColumns: isSalesOwnedEarly ? '1fr' : '3fr 2fr', gap: '24px', alignItems: 'start' }}>
+                    {/* Main column */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <ApplicantSnapshot loan={loan} onUpdated={() => loadLoanDetails({ silent: true })} />
                         {salesCanDoStage1 ? (
                             <SalesDataCollection
                                 loan={loan}
@@ -269,32 +274,29 @@ export default function ApplicationDetail() {
                                 onApproveStage1={handleApproveStage1}
                             />
                         ) : (
-                            <>
-                                <VerificationRisk
-                                    loan={loan}
-                                    onInitiateMonoConnect={handleInitiateMonoConnect}
-                                    onRefreshMonoStatus={handleRefreshMonoStatus}
-                                    monoInitiating={monoInitiating}
-                                    monoRefreshing={monoRefreshing}
-                                    monoFeedbackMessage={monoFeedbackMessage}
-                                    monoFeedbackError={monoFeedbackError}
-                                />
-                                {showDirectDebit ? (
-                                    <DirectDebitCard
-                                        loan={loan}
-                                        onUpdated={() => loadLoanDetails({ silent: true })}
-                                    />
-                                ) : null}
-                                <AiPreScreenCard
-                                    loan={loan}
-                                    onUpdated={(updated) => setLoan({ ...updated, affordability: loan.affordability, riskFlags: loan.riskFlags })}
-                                />
-                            </>
+                            <VerificationRisk
+                                loan={loan}
+                                onInitiateMonoConnect={handleInitiateMonoConnect}
+                                onRefreshMonoStatus={handleRefreshMonoStatus}
+                                monoInitiating={monoInitiating}
+                                monoRefreshing={monoRefreshing}
+                                monoFeedbackMessage={monoFeedbackMessage}
+                                monoFeedbackError={monoFeedbackError}
+                                onUpdated={(updated) => {
+                                    if (updated) {
+                                        setLoan({ ...updated, affordability: loan.affordability, riskFlags: loan.riskFlags })
+                                    } else {
+                                        loadLoanDetails({ silent: true })
+                                    }
+                                }}
+                            />
                         )}
+                        {/* DirectDebitCard suspended — keep code, reactivate when needed */}
                     </div>
 
-                    {!(session?.role === 'sales' && loan.assignedTo === session.username && (loan.status === 'pending' || loan.status === 'incomplete')) && (
-                        <div className="detail-column">
+                    {/* Right panel — decision + docs + provider */}
+                    {!isSalesOwnedEarly && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                             <DecisionPanel
                                 loan={loan}
                                 session={session}
@@ -303,40 +305,40 @@ export default function ApplicationDetail() {
                                 onRequestInfo={handleRequestInfo}
                             />
 
-                            <div className="detail-card mt-4">
-                              <h3 style={{ margin: '0 0 8px', fontSize: '0.9375rem', fontWeight: 600 }}>Documents</h3>
-                              {loan.documentRequests?.length > 0 ? (
-                                <div style={{ marginBottom: '10px' }}>
-                                  {loan.documentRequests.map((doc) => (
-                                    <div key={doc.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', borderBottom: '1px solid #f3f4f6', fontSize: '0.8125rem' }}>
-                                      <span style={{ fontSize: '0.9rem' }}>{doc.status === 'uploaded' ? '✅' : '⏳'}</span>
-                                      <div style={{ flex: 1 }}>
-                                        <span style={{ fontWeight: 600 }}>{doc.label}</span>
-                                        {doc.note && <span style={{ color: '#6b7280', marginLeft: '6px' }}>— {doc.note}</span>}
-                                      </div>
-                                      {doc.status === 'uploaded' && doc.fileUrl && (
-                                        <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', fontSize: '0.75rem' }}>View</a>
-                                      )}
+                            <div className="detail-card">
+                                <h3 style={{ margin: '0 0 12px', fontSize: '0.9375rem', fontWeight: 600 }}>Documents</h3>
+                                {loan.documentRequests?.length > 0 ? (
+                                    <div style={{ marginBottom: '12px' }}>
+                                        {loan.documentRequests.map((doc) => (
+                                            <div key={doc.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', borderBottom: '1px solid #f3f4f6', fontSize: '0.8125rem' }}>
+                                                <span style={{ fontSize: '0.9rem' }}>{doc.status === 'uploaded' ? '✅' : '⏳'}</span>
+                                                <div style={{ flex: 1 }}>
+                                                    <span style={{ fontWeight: 600 }}>{doc.label}</span>
+                                                    {doc.note && <span style={{ color: '#6b7280', marginLeft: '6px' }}>— {doc.note}</span>}
+                                                </div>
+                                                {doc.status === 'uploaded' && doc.fileUrl && (
+                                                    <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', fontSize: '0.75rem' }}>View</a>
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <p style={{ margin: '0 0 10px', color: '#9ca3af', fontSize: '0.8125rem' }}>No documents requested yet.</p>
-                              )}
-                              <button
-                                onClick={() => setShowRequestDocs(true)}
-                                style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: '7px', padding: '7px 14px', color: '#1d4ed8', fontWeight: 600, fontSize: '0.8125rem', cursor: 'pointer', width: '100%' }}
-                              >
-                                📎 Request Documents from Applicant
-                              </button>
+                                ) : (
+                                    <p style={{ margin: '0 0 12px', color: '#9ca3af', fontSize: '0.8125rem' }}>No documents requested yet.</p>
+                                )}
+                                <button
+                                    onClick={() => setShowRequestDocs(true)}
+                                    style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: '7px', padding: '7px 14px', color: '#1d4ed8', fontWeight: 600, fontSize: '0.8125rem', cursor: 'pointer', width: '100%' }}
+                                >
+                                    Request Documents from Applicant
+                                </button>
                             </div>
 
                             {session?.role === 'admin' && (
-                                <div className="detail-card mt-4">
+                                <div className="detail-card">
                                     <h3 style={{ margin: '0 0 4px', fontSize: '0.9375rem', fontWeight: 600 }}>Assign Provider</h3>
                                     {loan.providerName || loan.provider?.name ? (
                                         <p style={{ margin: '0 0 12px', fontSize: '0.8125rem', color: '#6b7280' }}>
-                                            Currently linked: <strong style={{ color: '#111827' }}>{loan.providerName || loan.provider?.name}</strong>
+                                            Linked: <strong style={{ color: '#111827' }}>{loan.providerName || loan.provider?.name}</strong>
                                         </p>
                                     ) : (
                                         <p style={{ margin: '0 0 12px', fontSize: '0.8125rem', color: '#9ca3af' }}>No provider linked yet.</p>
@@ -345,11 +347,7 @@ export default function ApplicationDetail() {
                                         <select
                                             value={selectedProviderId}
                                             onChange={(e) => { setSelectedProviderId(e.target.value); setAssignProviderError('') }}
-                                            style={{
-                                                flex: 1, padding: '8px 10px', borderRadius: '8px',
-                                                border: '1.5px solid #e2e8f0', fontSize: '0.875rem',
-                                                background: '#fff', outline: 'none',
-                                            }}
+                                            style={{ flex: 1, padding: '8px 10px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', background: '#fff', outline: 'none' }}
                                         >
                                             <option value="">Select a provider…</option>
                                             {providers.map((p) => (
@@ -365,7 +363,8 @@ export default function ApplicationDetail() {
                                                 padding: '8px 16px', borderRadius: '8px', border: 'none',
                                                 background: selectedProviderId ? '#2563eb' : '#e5e7eb',
                                                 color: selectedProviderId ? '#fff' : '#9ca3af',
-                                                fontWeight: 600, fontSize: '0.875rem', cursor: selectedProviderId ? 'pointer' : 'not-allowed',
+                                                fontWeight: 600, fontSize: '0.875rem',
+                                                cursor: selectedProviderId ? 'pointer' : 'not-allowed',
                                                 whiteSpace: 'nowrap',
                                             }}
                                         >
@@ -381,18 +380,20 @@ export default function ApplicationDetail() {
                     )}
                 </div>
             ) : activeTab === 'credit' ? (
-                <div style={{ maxWidth: '560px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', alignItems: 'start' }}>
+                    <AiPreScreenCard
+                        loan={loan}
+                        onUpdated={(updated) => setLoan({ ...updated, affordability: loan.affordability, riskFlags: loan.riskFlags })}
+                    />
                     <P2VestCard
                         loan={loan}
                         onUpdated={() => loadLoanDetails({ silent: true })}
                     />
                 </div>
             ) : (
-                <div className="detail-card full-width">
-                    <h3>Application Audit Trail</h3>
-                    <div className="audit-timeline mt-4">
-                        <AuditTimeline loanId={loan.id} />
-                    </div>
+                <div className="detail-card">
+                    <h3 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 600 }}>Audit Trail</h3>
+                    <AuditTimeline loanId={loan.id} />
                 </div>
             )}
 
