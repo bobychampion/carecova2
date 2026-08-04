@@ -14,6 +14,7 @@ import SalesDataCollection from '../../components/admin/ApplicationDetail/SalesD
 import DirectDebitCard from '../../components/admin/DirectDebitCard'
 import P2VestCard from '../../components/admin/ApplicationDetail/P2VestCard'
 import AiPreScreenCard from '../../components/admin/ApplicationDetail/AiPreScreenCard'
+import TransactionAnalysisCard from '../../components/admin/ApplicationDetail/TransactionAnalysisCard'
 import InlineLoader from '../../components/ui/InlineLoader'
 import Modal from '../../components/ui/Modal'
 import RequestDocumentsModal from '../../components/admin/ApplicationDetail/RequestDocumentsModal'
@@ -380,14 +381,23 @@ export default function ApplicationDetail() {
                     )}
                 </div>
             ) : activeTab === 'credit' ? (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', alignItems: 'start' }}>
-                    <AiPreScreenCard
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', alignItems: 'start' }}>
+                        <AiPreScreenCard
+                            loan={loan}
+                            onUpdated={(updated) => setLoan({ ...updated, affordability: loan.affordability, riskFlags: loan.riskFlags })}
+                        />
+                        <P2VestCard
+                            loan={loan}
+                            onUpdated={() => loadLoanDetails({ silent: true })}
+                        />
+                    </div>
+                    <TransactionAnalysisCard
                         loan={loan}
-                        onUpdated={(updated) => setLoan({ ...updated, affordability: loan.affordability, riskFlags: loan.riskFlags })}
-                    />
-                    <P2VestCard
-                        loan={loan}
-                        onUpdated={() => loadLoanDetails({ silent: true })}
+                        onUpdated={(updated) => {
+                            if (updated) setLoan({ ...updated, affordability: loan.affordability, riskFlags: loan.riskFlags })
+                            else loadLoanDetails({ silent: true })
+                        }}
                     />
                 </div>
             ) : (

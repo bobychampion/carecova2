@@ -466,6 +466,14 @@ export const adminService = {
     })
   },
 
+  runTransactionAnalysis: async (loanId) => {
+    requireBackendFeature('Transaction analysis')
+    const trimmed = assertBackendLoanId(loanId, 'Transaction analysis')
+    return adminRequest(`/admin/loan-applications/${trimmed}/analysis/run`, {
+      method: 'POST',
+    })
+  },
+
   createMonoDirectDebitCustomerForLoan: async (loanId, payload = {}) => {
     if (USE_BACKEND) {
       const trimmed = assertBackendLoanId(loanId, 'Mono direct debit customer')
