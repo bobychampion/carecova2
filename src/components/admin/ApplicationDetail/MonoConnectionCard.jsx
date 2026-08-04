@@ -144,34 +144,38 @@ export default function MonoConnectionCard({
         </button>
       </div>
 
-      {/* Fetch Bank Statement — only shown when linked */}
-      {statusKey === 'linked' && (
-        <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <div>
-              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>Bank Statement</div>
-              {alreadyFetched && txCount !== null && (
-                <div style={{ fontSize: '0.8rem', color: '#10b981', marginTop: '2px' }}>
-                  Fetched — {txCount} transactions
-                </div>
-              )}
-              {alreadyFetched && txCount === null && (
-                <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '2px' }}>
-                  Previously fetched
-                </div>
-              )}
-              {!alreadyFetched && (
-                <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '2px' }}>
-                  Not yet fetched
-                </div>
-              )}
-            </div>
+      {/* Fetch Bank Statement — always visible, disabled until linked */}
+      <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e2e8f0', opacity: statusKey !== 'linked' ? 0.5 : 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <div>
+            <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>Bank Statement</div>
+            {statusKey !== 'linked' ? (
+              <div style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '2px' }}>
+                Send Connect Link first, wait for applicant to link their bank
+              </div>
+            ) : alreadyFetched && txCount !== null ? (
+              <div style={{ fontSize: '0.8rem', color: '#10b981', marginTop: '2px' }}>
+                Fetched — {txCount} transactions
+              </div>
+            ) : alreadyFetched ? (
+              <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '2px' }}>
+                Previously fetched
+              </div>
+            ) : (
+              <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '2px' }}>
+                Ready to fetch — account is linked
+              </div>
+            )}
+          </div>
+          {(() => {
+            const isLinked = statusKey === 'linked'
+            return (
             <button
               onClick={handleFetchStatement}
-              disabled={fetching}
+              disabled={fetching || !isLinked}
               style={{
                 padding: '7px 14px', borderRadius: '7px', border: '1.5px solid',
-                borderColor: alreadyFetched ? '#d1d5db' : '#2563eb',
+                borderColor: !isLinked ? '#e5e7eb' : alreadyFetched ? '#d1d5db' : '#2563eb',
                 background: alreadyFetched ? '#f9fafb' : '#eff6ff',
                 color: alreadyFetched ? '#6b7280' : '#1d4ed8',
                 fontWeight: 600, fontSize: '0.8125rem',
@@ -180,19 +184,20 @@ export default function MonoConnectionCard({
             >
               {fetching ? 'Fetching…' : alreadyFetched ? 'Re-fetch Statement' : 'Fetch Bank Statement'}
             </button>
-          </div>
-          {fetchResult && (
-            <div className="alert-box alert-success" style={{ marginTop: '8px', fontSize: '0.8125rem' }}>
-              Statement fetched — {fetchResult.count ?? '?'} transactions retrieved
-            </div>
-          )}
-          {fetchError && (
-            <div className="alert-box alert-error" style={{ marginTop: '8px', fontSize: '0.8125rem' }}>
-              {fetchError}
-            </div>
-          )}
+            )
+          })()}
         </div>
-      )}
+        {fetchResult && (
+          <div className="alert-box alert-success" style={{ marginTop: '8px', fontSize: '0.8125rem' }}>
+            Statement fetched — {fetchResult.count ?? '?'} transactions retrieved
+          </div>
+        )}
+        {fetchError && (
+          <div className="alert-box alert-error" style={{ marginTop: '8px', fontSize: '0.8125rem' }}>
+            {fetchError}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

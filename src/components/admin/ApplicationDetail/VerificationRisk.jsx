@@ -28,9 +28,11 @@ export default function VerificationRisk({
 
   const bvnResult = loan.bvnVerification
   const bvnVerifiedAt = bvnResult?.verifiedAt
-  const bvnMatchStatus = bvnResult?.data?.name
-    ? `Name on file: ${bvnResult.data.name}`
-    : bvnResult?.message || null
+  const bvnData = bvnResult?.data || {}
+  const bvnFullName = [bvnData.first_name, bvnData.middle_name, bvnData.last_name]
+    .filter(Boolean).join(' ') || null
+  const bvnDob = bvnData.date_of_birth || bvnData.dob || null
+  const bvnPhone = bvnData.phone_number || bvnData.phone || null
 
   const handleVerifyBvn = async () => {
     setBvnVerifying(true)
@@ -69,11 +71,30 @@ export default function VerificationRisk({
         </div>
 
         {bvnResult && (
-          <div style={{ marginTop: '10px', padding: '10px', background: '#f0fdf4', borderRadius: '6px', fontSize: '0.8125rem' }}>
-            {bvnMatchStatus && <div style={{ marginBottom: '4px' }}>{bvnMatchStatus}</div>}
-            {bvnVerifiedAt && (
-              <div style={{ color: '#6b7280' }}>Verified at {new Date(bvnVerifiedAt).toLocaleString()}</div>
+          <div style={{ marginTop: '10px', padding: '12px', background: '#f0fdf4', borderRadius: '8px', fontSize: '0.8125rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div>
+              <div style={{ fontSize: '0.7rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginBottom: '2px' }}>Full Name</div>
+              <div style={{ fontWeight: 700, color: '#111827' }}>{bvnFullName || '—'}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '0.7rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginBottom: '2px' }}>BVN</div>
+              <div style={{ fontFamily: 'monospace', color: '#111827' }}>{bvnData.bvn || loan.bvn || '—'}</div>
+            </div>
+            {bvnDob && (
+              <div>
+                <div style={{ fontSize: '0.7rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginBottom: '2px' }}>Date of Birth</div>
+                <div style={{ color: '#111827' }}>{bvnDob}</div>
+              </div>
             )}
+            {bvnPhone && (
+              <div>
+                <div style={{ fontSize: '0.7rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginBottom: '2px' }}>Phone</div>
+                <div style={{ color: '#111827' }}>{bvnPhone}</div>
+              </div>
+            )}
+            <div style={{ gridColumn: '1 / -1', borderTop: '1px solid #bbf7d0', paddingTop: '8px', color: '#6b7280', fontSize: '0.75rem' }}>
+              Verified at {bvnVerifiedAt ? new Date(bvnVerifiedAt).toLocaleString() : '—'}
+            </div>
           </div>
         )}
 
