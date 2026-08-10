@@ -887,7 +887,7 @@ export default function Apply() {
                 <h3>Repayment Preferences</h3>
                 <p className="caption" style={{ marginTop: '0' }}>Preference helps us set up repayment, but final route follows policy.</p>
                 {isGov && <p className="caption" style={{ color: '#10b981', fontWeight: 'bold' }}>Policy: Salary deduction → Bank debit → Card fallback</p>}
-                {isPrivate && <p className="caption" style={{ color: '#10b981', fontWeight: 'bold' }}>Policy: Bank debit → Card fallback (Co-borrower recommended)</p>}
+                {isPrivate && <p className="caption" style={{ color: '#10b981', fontWeight: 'bold' }}>Policy: Bank debit → Card fallback (Guarantor recommended)</p>}
               </div>
 
               <Select label="Preferred repayment method" options={[{ value: '', label: 'Select method' }, ...availableRepaymentMethods]} value={formData.repaymentMethod} onChange={(e) => handleChange('repaymentMethod', e.target.value)} error={errors.repaymentMethod} required />
@@ -983,9 +983,11 @@ export default function Apply() {
               </div>
               {(formData.addCoBorrower === true || formData.addCoBorrower === 'yes') && (
                 <div className="review-card">
-                  <h3>Co-Borrower</h3>
+                  <h3>Guarantor</h3>
                   <div className="review-item"><strong>Name:</strong> {formData.coBorrowerName}</div>
                   <div className="review-item"><strong>Phone:</strong> {formData.coBorrowerPhone}</div>
+                  <div className="review-item"><strong>Email:</strong> {formData.coBorrowerEmail}</div>
+                  <div className="review-item"><strong>BVN:</strong> {formData.coBorrowerBvn}</div>
                   <div className="review-item"><strong>Relationship:</strong> {formData.coBorrowerRelationship}</div>
                 </div>
               )}
