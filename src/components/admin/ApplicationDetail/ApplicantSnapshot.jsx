@@ -246,7 +246,7 @@ export default function ApplicantSnapshot({ loan, onUpdated }) {
 
             {loan.coBorrower && (
                 <div className="detail-card" style={{ borderLeft: '4px solid #3b82f6' }}>
-                    <h2>Co-Borrower</h2>
+                    <h2>Guarantor</h2>
                     <div className="info-grid">
                         <div className="info-group">
                             <div className="info-label">Name</div>
@@ -255,6 +255,14 @@ export default function ApplicantSnapshot({ loan, onUpdated }) {
                         <div className="info-group">
                             <div className="info-label">Phone</div>
                             <div className="info-value">{loan.coBorrower.phone}</div>
+                        </div>
+                        <div className="info-group">
+                            <div className="info-label">Email</div>
+                            <div className="info-value">{loan.coBorrower.email || '—'}</div>
+                        </div>
+                        <div className="info-group">
+                            <div className="info-label">BVN</div>
+                            <div className="info-value">{loan.coBorrower.bvn || '—'}</div>
                         </div>
                         <div className="info-group">
                             <div className="info-label">Relationship</div>

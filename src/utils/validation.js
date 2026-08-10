@@ -102,12 +102,21 @@ export const validateStep = (step, formData) => {
     case 4: {
       if (formData.addCoBorrower === true || formData.addCoBorrower === 'yes') {
         if (!formData.coBorrowerName || !formData.coBorrowerName.trim()) {
-          errors.coBorrowerName = 'Co-Borrower name is required'
+          errors.coBorrowerName = 'Guarantor name is required'
         }
         const cPhoneError = validatePhone(formData.coBorrowerPhone)
         if (cPhoneError) errors.coBorrowerPhone = cPhoneError
+        if (!formData.coBorrowerEmail || !formData.coBorrowerEmail.trim()) {
+          errors.coBorrowerEmail = 'Guarantor email is required'
+        } else {
+          const cEmailError = validateEmail(formData.coBorrowerEmail)
+          if (cEmailError) errors.coBorrowerEmail = cEmailError
+        }
+        const cBvn = String(formData.coBorrowerBvn || '').trim()
+        if (!cBvn) errors.coBorrowerBvn = 'Guarantor BVN is required'
+        else if (!/^\d{11}$/.test(cBvn)) errors.coBorrowerBvn = 'BVN must be exactly 11 digits'
         if (!formData.coBorrowerRelationship || !formData.coBorrowerRelationship.trim()) {
-          errors.coBorrowerRelationship = 'Relationship to co-borrower is required'
+          errors.coBorrowerRelationship = 'Relationship to guarantor is required'
         }
       }
       break

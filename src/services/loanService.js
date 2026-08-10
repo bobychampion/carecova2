@@ -131,10 +131,28 @@ function buildApiPayload(data) {
       ? {
           name: data.coBorrowerName,
           phone: data.coBorrowerPhone,
+          email: data.coBorrowerEmail,
+          bvn: data.coBorrowerBvn,
           relationship: data.coBorrowerRelationship,
           employmentSector: data.coBorrowerEmploymentSector,
           employerName: data.coBorrowerEmployerName,
           monthlyIncome: data.coBorrowerMonthlyIncome,
+        }
+      : undefined
+  )
+
+  // Guarantor object matching the financier (P2Vest) credit-review payload shape
+  const guarantorName = data.guarantorName ?? data.coBorrowerName
+  const guarantorPhone = data.guarantorPhone ?? data.coBorrowerPhone
+  const guarantorEmail = data.guarantorEmail ?? data.coBorrowerEmail
+  const guarantorBvn = data.guarantorBvn ?? data.coBorrowerBvn
+  const guarantor = data.guarantor || (
+    addGuarantor
+      ? {
+          fullName: guarantorName,
+          phone: guarantorPhone,
+          email: guarantorEmail,
+          bvn: guarantorBvn,
         }
       : undefined
   )
@@ -184,12 +202,15 @@ function buildApiPayload(data) {
     lenderType: data.lenderType,
 
     addGuarantor,
-    guarantorName: data.guarantorName ?? data.coBorrowerName,
-    guarantorPhone: data.guarantorPhone ?? data.coBorrowerPhone,
+    guarantorName,
+    guarantorPhone,
+    guarantorEmail,
+    guarantorBvn,
     guarantorRelationship: data.guarantorRelationship ?? data.coBorrowerRelationship,
     guarantorAddress: data.guarantorAddress,
     guarantorEmploymentType: data.guarantorEmploymentType ?? data.coBorrowerEmploymentSector,
 
+    guarantor,
     coBorrower,
 
     documents: {
@@ -292,8 +313,12 @@ function validateApplicationData(applicationData) {
     }
   }
   if (applicationData.addGuarantor === true || applicationData.addGuarantor === 'yes') {
+    const gBvn = String(applicationData.guarantorBvn || applicationData.coBorrowerBvn || '').trim()
     if (!(applicationData.guarantorName || '').trim() || !(applicationData.guarantorPhone || '').trim() || !(applicationData.guarantorRelationship || '').trim()) {
       throw new Error('Guarantor details are required when adding a guarantor')
+    }
+    if (!/^\d{11}$/.test(gBvn)) {
+      throw new Error('A valid 11-digit guarantor BVN is required when adding a guarantor')
     }
   }
   if (!applicationData.consentDataProcessing || !applicationData.consentTerms) {
@@ -376,6 +401,8 @@ export const loanService = {
             addGuarantor: applicationData.addGuarantor,
             guarantorName: applicationData.guarantorName,
             guarantorPhone: applicationData.guarantorPhone,
+            guarantorEmail: applicationData.guarantorEmail ?? applicationData.coBorrowerEmail,
+            guarantorBvn: applicationData.guarantorBvn ?? applicationData.coBorrowerBvn,
             guarantorRelationship: applicationData.guarantorRelationship,
             guarantorAddress: applicationData.guarantorAddress,
             guarantorEmploymentType: applicationData.guarantorEmploymentType,

@@ -188,6 +188,9 @@ export default function LoanDetailModal({ loan, onClose, onApprove, onReject, on
                 <div>
                   <strong>Guarantor:</strong>
                   <p>{loan.guarantorName}{loan.guarantorPhone ? ` — ${loan.guarantorPhone}` : ''}{loan.guarantorRelationship ? ` (${loan.guarantorRelationship})` : ''}</p>
+                  {(loan.guarantorEmail || loan.guarantorBvn) && (
+                    <p>{loan.guarantorEmail || ''}{loan.guarantorEmail && loan.guarantorBvn ? ' — ' : ''}{loan.guarantorBvn ? `BVN: ${loan.guarantorBvn}` : ''}</p>
+                  )}
                 </div>
               )}
               {(loan.employerName || loan.jobTitle) && (
