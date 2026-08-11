@@ -6,7 +6,7 @@ export default function ProgressIndicator({ currentStep, totalSteps }) {
     'Applicant & Location',
     'Treatment Info',
     'Financial Info',
-    'Guarantor (Optional)',
+    'Guarantor',
     'Review & Submit',
   ]
 

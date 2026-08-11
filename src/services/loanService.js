@@ -172,6 +172,13 @@ function buildApiPayload(data) {
     gpsLng: toNumber(data.gpsLng),
     preferredContact: data.preferredContact || 'call',
 
+    // Identity & personal
+    bvn: data.bvn,
+    nin: data.nin,
+    dateOfBirth: data.dateOfBirth,
+    gender: data.gender,
+    applicantPhoto: data.applicantPhoto || null,
+
     treatmentCategory: data.treatmentCategory,
     procedureOrService: data.procedureOrService,
     healthDescription: data.healthDescription,
@@ -184,6 +191,7 @@ function buildApiPayload(data) {
     employmentSector: data.employmentSector,
     employerName: data.employerName,
     jobTitle: data.jobTitle,
+    employmentDuration: data.employmentDuration,
     salaryFrequency: data.salaryFrequency,
     monthlyIncome: toNumber(data.monthlyIncome) ?? data.monthlyIncome,
     monthlyIncomeRange: data.monthlyIncomeRange,

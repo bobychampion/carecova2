@@ -69,6 +69,7 @@ export default function P2VestCard({ loan, onUpdated }) {
   const [selectedProvider, setSelectedProvider] = useState('')
   const [assigning, setAssigning] = useState(false)
   const [bvnInput, setBvnInput] = useState('')
+  const [guarantorInput, setGuarantorInput] = useState({ fullName: '', phone: '', email: '', bvn: '' })
 
   const decision = loan?.p2vestDecision
   const hasDecision = !!decision?.decisionStatus
@@ -79,6 +80,11 @@ export default function P2VestCard({ loan, onUpdated }) {
   const linkedProvider = loan?.providerName || loan?.provider?.name
   const hasVirtualAccount = !!loan?.p2vestVirtualAccountNumber
 
+  // Whether a usable guarantor is already on record (P2Vest requires one)
+  const recordGuarantorBvn = loan?.guarantor?.bvn || loan?.guarantorBvn || loan?.coBorrower?.bvn
+  const recordGuarantorName = loan?.guarantor?.fullName || loan?.guarantorName || loan?.coBorrower?.name
+  const hasGuarantorOnRecord = !!(recordGuarantorBvn && recordGuarantorName)
+
   useEffect(() => {
     adminService.getProviders().then(setProviders).catch(() => {})
   }, [])
@@ -88,9 +94,13 @@ export default function P2VestCard({ loan, onUpdated }) {
     setSuccess('')
     setSubmitting(true)
     try {
-      await adminService.submitP2VestReview(loan.id, bvnInput || undefined)
+      const guarantorOverride = (guarantorInput.fullName || guarantorInput.phone || guarantorInput.email || guarantorInput.bvn)
+        ? guarantorInput
+        : undefined
+      await adminService.submitP2VestReview(loan.id, bvnInput || undefined, guarantorOverride)
       setSuccess('Application submitted to P2Vest. The credit decision will appear here shortly.')
       setBvnInput('')
+      setGuarantorInput({ fullName: '', phone: '', email: '', bvn: '' })
       onUpdated?.()
     } catch (err) {
       setError(err.message || 'Failed to submit to P2Vest')
@@ -331,6 +341,47 @@ export default function P2VestCard({ loan, onUpdated }) {
             onChange={(e) => setBvnInput(e.target.value.replace(/\D/g, ''))}
             style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', borderRadius: '7px', border: '1.5px solid #e2e8f0', fontSize: '0.8125rem', background: '#fff', color: '#111827', outline: 'none' }}
           />
+        </div>
+      )}
+
+      {/* Guarantor override — P2Vest requires a guarantor; shown when none is on record */}
+      {!hasGuarantorOnRecord && (
+        <div style={{ marginBottom: '12px', padding: '10px 12px', borderRadius: '8px', background: '#fffbeb', border: '1px solid #fde68a' }}>
+          <p style={{ margin: '0 0 8px', fontSize: '0.75rem', color: '#92400e', fontWeight: 600 }}>
+            Guarantor required by P2Vest — none on record. Enter guarantor details to submit:
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <input
+              type="text"
+              placeholder="Full name"
+              value={guarantorInput.fullName}
+              onChange={(e) => setGuarantorInput((g) => ({ ...g, fullName: e.target.value }))}
+              style={{ boxSizing: 'border-box', padding: '8px 10px', borderRadius: '7px', border: '1.5px solid #e2e8f0', fontSize: '0.8125rem', background: '#fff', color: '#111827', outline: 'none' }}
+            />
+            <input
+              type="tel"
+              placeholder="Phone"
+              value={guarantorInput.phone}
+              onChange={(e) => setGuarantorInput((g) => ({ ...g, phone: e.target.value }))}
+              style={{ boxSizing: 'border-box', padding: '8px 10px', borderRadius: '7px', border: '1.5px solid #e2e8f0', fontSize: '0.8125rem', background: '#fff', color: '#111827', outline: 'none' }}
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              value={guarantorInput.email}
+              onChange={(e) => setGuarantorInput((g) => ({ ...g, email: e.target.value }))}
+              style={{ boxSizing: 'border-box', padding: '8px 10px', borderRadius: '7px', border: '1.5px solid #e2e8f0', fontSize: '0.8125rem', background: '#fff', color: '#111827', outline: 'none' }}
+            />
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={11}
+              placeholder="11-digit BVN"
+              value={guarantorInput.bvn}
+              onChange={(e) => setGuarantorInput((g) => ({ ...g, bvn: e.target.value.replace(/\D/g, '') }))}
+              style={{ boxSizing: 'border-box', padding: '8px 10px', borderRadius: '7px', border: '1.5px solid #e2e8f0', fontSize: '0.8125rem', background: '#fff', color: '#111827', outline: 'none' }}
+            />
+          </div>
         </div>
       )}
 

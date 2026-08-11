@@ -1900,10 +1900,20 @@ export const adminService = {
     })
   },
 
-  submitP2VestReview: async (loanId, bvn) => {
+  submitP2VestReview: async (loanId, bvn, guarantor) => {
     requireBackendFeature('P2Vest credit review')
     const trimmed = assertBackendLoanId(loanId, 'P2Vest review')
-    const body = bvn ? JSON.stringify({ bvn: String(bvn).trim() }) : undefined
+    const payload = {}
+    if (bvn) payload.bvn = String(bvn).trim()
+    if (guarantor && (guarantor.fullName || guarantor.phone || guarantor.email || guarantor.bvn)) {
+      payload.guarantor = {
+        fullName: (guarantor.fullName || '').trim(),
+        phone: (guarantor.phone || '').trim(),
+        email: (guarantor.email || '').trim(),
+        bvn: String(guarantor.bvn || '').trim(),
+      }
+    }
+    const body = Object.keys(payload).length ? JSON.stringify(payload) : undefined
     return adminRequest(`/partners/p2vest/loans/${encodeURIComponent(trimmed)}/review-request`, {
       method: 'POST',
       ...(body ? { body } : {}),

@@ -165,8 +165,8 @@ export default function Apply() {
     activeLoansMonthlyRepayment: '',
     lenderType: '',
 
-    // Guarantor (maps to guarantor* payload fields sent to financiers)
-    addCoBorrower: false,
+    // Guarantor (required by financier; maps to guarantor* payload fields)
+    addCoBorrower: true,
     coBorrowerName: '',
     coBorrowerPhone: '',
     coBorrowerEmail: '',
@@ -915,28 +915,17 @@ export default function Apply() {
       case 4:
         return (
           <div className="step-content">
-            <h2>Guarantor (Optional)</h2>
-            <p className="step-description">Adding a Guarantor is recommended for private sector employees and higher loan amounts. Their BVN is required and shared with the financier.</p>
+            <h2>Guarantor (Required)</h2>
+            <p className="step-description">A guarantor is required by our financing partner. Their full name, phone, email, and 11-digit BVN are shared with the financier for the credit review.</p>
             <div className="form-grid">
-              <div className="form-section-label">
-                <label>Add a Guarantor?</label>
-                <div className="tenure">
-                  <button type="button" className={`chip ${formData.addCoBorrower === true || formData.addCoBorrower === 'yes' ? 'active' : ''}`} onClick={() => handleChange('addCoBorrower', true)}>Yes</button>
-                  <button type="button" className={`chip ${!formData.addCoBorrower ? 'active' : ''}`} onClick={() => handleChange('addCoBorrower', false)}>No</button>
-                </div>
-              </div>
-              {(formData.addCoBorrower === true || formData.addCoBorrower === 'yes') && (
-                <>
-                  <Input label="Guarantor full name" type="text" placeholder="Full name" value={formData.coBorrowerName} onChange={(e) => handleChange('coBorrowerName', e.target.value)} error={errors.coBorrowerName} required />
-                  <Input label="Guarantor phone" type="tel" placeholder="0801 234 5678" value={formData.coBorrowerPhone} onChange={(e) => handleChange('coBorrowerPhone', e.target.value)} error={errors.coBorrowerPhone} required />
-                  <Input label="Guarantor email" type="email" placeholder="name@example.com" value={formData.coBorrowerEmail} onChange={(e) => handleChange('coBorrowerEmail', e.target.value)} error={errors.coBorrowerEmail} required />
-                  <Input label="Guarantor BVN" type="text" inputMode="numeric" maxLength={11} placeholder="11 digits" value={formData.coBorrowerBvn} onChange={(e) => handleChange('coBorrowerBvn', e.target.value.replace(/\D/g, '').slice(0, 11))} error={errors.coBorrowerBvn} required />
-                  <Input label="Relationship" type="text" placeholder="e.g. Spouse, Sibling" value={formData.coBorrowerRelationship} onChange={(e) => handleChange('coBorrowerRelationship', e.target.value)} error={errors.coBorrowerRelationship} required />
-                  <Select label="Employment sector" options={EMPLOYMENT_SECTOR_OPTIONS} value={formData.coBorrowerEmploymentSector} onChange={(e) => handleChange('coBorrowerEmploymentSector', e.target.value)} />
-                  <Input label="Employer Name (optional)" type="text" value={formData.coBorrowerEmployerName} onChange={(e) => handleChange('coBorrowerEmployerName', e.target.value)} />
-                  <MoneyInput label="Monthly income (optional)" placeholder="₦ 0.00" value={formData.coBorrowerMonthlyIncome} onChange={(v) => handleChange('coBorrowerMonthlyIncome', v)} />
-                </>
-              )}
+              <Input label="Guarantor full name" type="text" placeholder="Full name" value={formData.coBorrowerName} onChange={(e) => handleChange('coBorrowerName', e.target.value)} error={errors.coBorrowerName} required />
+              <Input label="Guarantor phone" type="tel" placeholder="0801 234 5678" value={formData.coBorrowerPhone} onChange={(e) => handleChange('coBorrowerPhone', e.target.value)} error={errors.coBorrowerPhone} required />
+              <Input label="Guarantor email" type="email" placeholder="name@example.com" value={formData.coBorrowerEmail} onChange={(e) => handleChange('coBorrowerEmail', e.target.value)} error={errors.coBorrowerEmail} required />
+              <Input label="Guarantor BVN" type="text" inputMode="numeric" maxLength={11} placeholder="11 digits" value={formData.coBorrowerBvn} onChange={(e) => handleChange('coBorrowerBvn', e.target.value.replace(/\D/g, '').slice(0, 11))} error={errors.coBorrowerBvn} required />
+              <Input label="Relationship" type="text" placeholder="e.g. Spouse, Sibling" value={formData.coBorrowerRelationship} onChange={(e) => handleChange('coBorrowerRelationship', e.target.value)} error={errors.coBorrowerRelationship} required />
+              <Select label="Employment sector (optional)" options={EMPLOYMENT_SECTOR_OPTIONS} value={formData.coBorrowerEmploymentSector} onChange={(e) => handleChange('coBorrowerEmploymentSector', e.target.value)} />
+              <Input label="Employer Name (optional)" type="text" value={formData.coBorrowerEmployerName} onChange={(e) => handleChange('coBorrowerEmployerName', e.target.value)} />
+              <MoneyInput label="Monthly income (optional)" placeholder="₦ 0.00" value={formData.coBorrowerMonthlyIncome} onChange={(v) => handleChange('coBorrowerMonthlyIncome', v)} />
             </div>
           </div>
         )
