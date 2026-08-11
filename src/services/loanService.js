@@ -141,21 +141,11 @@ function buildApiPayload(data) {
       : undefined
   )
 
-  // Guarantor object matching the financier (P2Vest) credit-review payload shape
+  // Flat guarantor fields — the backend assembles the P2Vest guarantor block from these.
   const guarantorName = data.guarantorName ?? data.coBorrowerName
   const guarantorPhone = data.guarantorPhone ?? data.coBorrowerPhone
   const guarantorEmail = data.guarantorEmail ?? data.coBorrowerEmail
   const guarantorBvn = data.guarantorBvn ?? data.coBorrowerBvn
-  const guarantor = data.guarantor || (
-    addGuarantor
-      ? {
-          fullName: guarantorName,
-          phone: guarantorPhone,
-          email: guarantorEmail,
-          bvn: guarantorBvn,
-        }
-      : undefined
-  )
 
   const payload = {
     fullName: name,
@@ -177,7 +167,6 @@ function buildApiPayload(data) {
     nin: data.nin,
     dateOfBirth: data.dateOfBirth,
     gender: data.gender,
-    applicantPhoto: data.applicantPhoto || null,
 
     treatmentCategory: data.treatmentCategory,
     procedureOrService: data.procedureOrService,
@@ -218,7 +207,6 @@ function buildApiPayload(data) {
     guarantorAddress: data.guarantorAddress,
     guarantorEmploymentType: data.guarantorEmploymentType ?? data.coBorrowerEmploymentSector,
 
-    guarantor,
     coBorrower,
 
     documents: {
