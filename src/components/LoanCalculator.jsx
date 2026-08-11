@@ -8,7 +8,14 @@ async function fetchSchedule(amount, tenure, creditScore) {
   const params = new URLSearchParams({ amount: String(amount), tenure: String(tenure) })
   if (creditScore) params.set('creditScore', String(creditScore))
   const res = await fetch(`${API_ROOT}/partners/p2vest/calculator?${params}`)
-  if (!res.ok) throw new Error('Could not calculate schedule')
+  if (!res.ok) {
+    let msg = 'Could not calculate schedule'
+    try {
+      const body = await res.json()
+      if (body?.message) msg = body.message
+    } catch {}
+    throw new Error(msg)
+  }
   return res.json()
 }
 
@@ -34,8 +41,8 @@ export default function LoanCalculator({ initialAmount = '', initialTenure = '',
         const data = await fetchSchedule(a, t, creditScore)
         setResult(data)
         onResult?.(data)
-      } catch {
-        setError('Unable to calculate — please check your connection.')
+      } catch (err) {
+        setError(err?.message || 'Unable to calculate — please check your connection.')
         setResult(null)
       } finally {
         setLoading(false)
