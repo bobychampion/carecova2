@@ -45,6 +45,12 @@ function InfoRow({ label, value }) {
 
 function parseP2VestError(message) {
   const lower = String(message || '').toLowerCase()
+  if (lower.includes('guarantor')) {
+    return {
+      title: 'Guarantor is required',
+      suggestion: 'P2Vest requires a guarantor for this application. Enter the guarantor\'s full name, phone, email and 11-digit BVN below, then re-submit.',
+    }
+  }
   if (lower.includes('bvn') || lower.includes('customer.bvn')) {
     return {
       title: 'BVN is required',
