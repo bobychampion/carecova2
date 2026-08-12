@@ -8115,3 +8115,148 @@
     gap: 0.5rem;
   }
 }
+
+/* ─── Admin Mobile Responsive ────────────────────────────────────────────── */
+
+.admin-hamburger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text);
+  padding: 4px;
+  border-radius: 6px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.admin-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-topbar-username {
+  /* hidden on small screens via media query */
+}
+
+.admin-sidebar-overlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* Hamburger visible on mobile */
+  .admin-hamburger {
+    display: flex;
+  }
+
+  /* Sidebar becomes a slide-in drawer */
+  .admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.12);
+  }
+
+  .admin-sidebar--open {
+    transform: translateX(0);
+  }
+
+  /* Dim overlay behind open sidebar */
+  .admin-sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 199;
+  }
+
+  /* Content takes full width */
+  .admin-content-wrapper {
+    width: 100%;
+  }
+
+  /* Topbar adjustments */
+  .admin-topbar {
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .admin-topbar-username {
+    display: none;
+  }
+
+  .admin-topbar-title {
+    font-size: 0.85rem;
+  }
+
+  /* Main content padding */
+  .admin-main-content {
+    padding: 12px 10px 80px;
+  }
+
+  /* 3-col detail grid → single column */
+  .detail-layout-3col {
+    grid-template-columns: 1fr;
+  }
+
+  /* Info grids → single column */
+  .info-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Affordability grid → 1 col */
+  .affordability-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Active loans header stats → wrap */
+  .active-loans-header-stats {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .active-loans-stat {
+    min-width: 130px;
+    flex: 1;
+  }
+
+  /* Tables — allow horizontal scroll */
+  .admin-table-wrapper,
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Buttons — full width on mobile where needed */
+  .detail-card .button--primary,
+  .detail-card .button--secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Page header */
+  .admin-page-header h1 {
+    font-size: 1.1rem;
+  }
+
+  /* Loan summary card */
+  .loan-info-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .loan-info-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .admin-topbar-title {
+    display: none;
+  }
+}

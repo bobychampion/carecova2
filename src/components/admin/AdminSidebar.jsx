@@ -16,7 +16,7 @@ import {
     Banknote,
 } from 'lucide-react';
 
-export default function AdminSidebar({ onLogout }) {
+export default function AdminSidebar({ onLogout, open, onClose }) {
     const { session } = useAuth()
     const role = session?.role || 'admin'
 
@@ -38,7 +38,7 @@ export default function AdminSidebar({ onLogout }) {
     const navItems = allItems.filter(item => item.roles.includes(role))
 
     return (
-        <aside className="admin-sidebar">
+        <aside className={`admin-sidebar${open ? ' admin-sidebar--open' : ''}`}>
             <div className="admin-sidebar-header">
                 <div className="admin-logo">CareCova</div>
             </div>
@@ -48,6 +48,7 @@ export default function AdminSidebar({ onLogout }) {
                     <NavLink
                         key={item.path}
                         to={item.path}
+                        onClick={onClose}
                         className={({ isActive }) =>
                             `admin-nav-item ${isActive ? 'active' : ''}`
                         }
