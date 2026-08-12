@@ -8260,3 +8260,48 @@
     display: none;
   }
 }
+
+/* ─── Application Detail Layout ──────────────────────────────────────────── */
+
+.detail-toolkit-grid {
+  display: grid;
+  grid-template-columns: 185px 1fr 300px;
+  gap: 28px;
+  align-items: start;
+}
+
+.detail-credit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.detail-right-panel {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .detail-toolkit-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Hide review sidebar on mobile — sections are read top to bottom */
+  .detail-toolkit-grid > :first-child {
+    display: none;
+  }
+
+  .detail-credit-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .detail-right-panel {
+    position: static;
+  }
+}

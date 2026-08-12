@@ -180,8 +180,10 @@ export default function ApplicationDetail() {
             setMonoInitiating(true)
             setMonoFeedbackMessage('')
             setMonoFeedbackError('')
+            const isReconnect = loan.monoConnectionStatus === 'linked'
             const response = await adminService.initiateMonoConnectForLoan(loan.id, {
                 redirectUrl: import.meta.env.VITE_MONO_REDIRECT_URL || `${window.location.origin}/track`,
+                ...(isReconnect ? { force: true } : {}),
             })
             setMonoFeedbackMessage(response?.message || 'Mono connect link has been sent to the user email')
             await loadLoanDetails({ silent: true })
@@ -287,7 +289,7 @@ export default function ApplicationDetail() {
                 </div>
             ) : (
                 /* ── 3-column toolkit layout ── */
-                <div style={{ display: 'grid', gridTemplateColumns: '185px 1fr 300px', gap: '28px', alignItems: 'start' }}>
+                <div className="detail-toolkit-grid">
 
                     {/* Left sidebar */}
                     <ReviewSidebar states={sectionStates} activeSection={activeSection} />
@@ -333,7 +335,7 @@ export default function ApplicationDetail() {
                                 subtitle="Bank statement analysis · Mono income & creditworthiness"
                                 state={sectionStates.credit}
                             />
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', alignItems: 'start' }}>
+                            <div className="detail-credit-grid">
                                 <MonoAssessmentCard
                                     loan={loan}
                                     onUpdated={(updated) => {
@@ -432,7 +434,7 @@ export default function ApplicationDetail() {
                     </div>
 
                     {/* Right panel (sticky) */}
-                    <div style={{ position: 'sticky', top: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div className="detail-right-panel">
 
                         {/* Loan summary */}
                         <div className="detail-card" style={{ borderLeft: '4px solid #2563eb' }}>
