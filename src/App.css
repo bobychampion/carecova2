@@ -8292,8 +8292,9 @@
   }
 
   /* Hide review sidebar on mobile — sections are read top to bottom */
+  /* !important needed because ReviewSidebar has inline style={{ display: 'flex' }} */
   .detail-toolkit-grid > :first-child {
-    display: none;
+    display: none !important;
   }
 
   .detail-credit-grid {
