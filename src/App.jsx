@@ -57,6 +57,7 @@ import { useFinancierAuth } from './hooks/useFinancierAuth'
 import RequireRoles from './components/auth/RequireRoles'
 import ProtectedFinancierRoute from './pages/ProtectedFinancierRoute'
 import UploadDocuments from './pages/UploadDocuments'
+import FinancialVerificationPage from './pages/FinancialVerification/FinancialVerificationPage'
 import { NotificationProvider } from './context/NotificationContext'
 import './App.css'
 
@@ -102,6 +103,7 @@ function App() {
         <Route path="/eligibility" element={<EligibilityCheck />} />
         <Route path="/track" element={<Track />} />
         <Route path="/upload-documents/:token" element={<UploadDocuments />} />
+        <Route path="/financial-verification/:token" element={<FinancialVerificationPage />} />
         <Route path="/login" element={<CustomerLogin />} />
         <Route path="/provider">
           <Route path="login" element={<ProviderLogin />} />
