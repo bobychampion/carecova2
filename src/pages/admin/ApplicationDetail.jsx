@@ -13,6 +13,7 @@ import DecisionPanel from '../../components/admin/ApplicationDetail/DecisionPane
 import SalesDataCollection from '../../components/admin/ApplicationDetail/SalesDataCollection'
 import P2VestCard from '../../components/admin/ApplicationDetail/P2VestCard'
 import AiPreScreenCard from '../../components/admin/ApplicationDetail/AiPreScreenCard'
+import AiChatPanel from '../../components/admin/ApplicationDetail/AiChatPanel'
 import TransactionAnalysisCard from '../../components/admin/ApplicationDetail/TransactionAnalysisCard'
 import MonoAssessmentCard from '../../components/admin/ApplicationDetail/MonoAssessmentCard'
 import ProviderSubmissionCard from '../../components/admin/ApplicationDetail/ProviderSubmissionCard'
@@ -355,12 +356,12 @@ export default function ApplicationDetail() {
                             </div>
                         </section>
 
-                        {/* §4 AI Pre-Screen */}
+                        {/* §4 AI Analysis */}
                         <section>
                             <SectionHeader
                                 id="ai"
-                                title="AI Pre-Screen"
-                                subtitle="Gemini consistency check and pre-screen narrative"
+                                title="AI Analysis"
+                                subtitle="Pre-screen, consistency check, and AI underwriter chat"
                                 state={sectionStates.ai}
                             />
                             <AiPreScreenCard
@@ -370,6 +371,9 @@ export default function ApplicationDetail() {
                                     if (merged) setLoan(merged)
                                 }}
                             />
+                            <div style={{ marginTop: '20px' }}>
+                                <AiChatPanel loan={loan} />
+                            </div>
                         </section>
 
                         {/* §5 Provider Submission */}
