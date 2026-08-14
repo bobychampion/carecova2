@@ -87,6 +87,15 @@ export const validateStep = (step, formData) => {
       if (!formData.repaymentMethod || !formData.repaymentMethod.trim()) {
         errors.repaymentMethod = 'Repayment method is required'
       }
+      if (!formData.repaymentBankName || !formData.repaymentBankName.trim()) {
+        errors.repaymentBankName = 'Repayment bank name is required'
+      }
+      const acct = String(formData.repaymentAccountNumber || '').replace(/\D/g, '')
+      if (!acct) {
+        errors.repaymentAccountNumber = 'Repayment account number is required'
+      } else if (acct.length !== 10) {
+        errors.repaymentAccountNumber = 'Account number must be exactly 10 digits'
+      }
       if (formData.hasActiveLoans === true || formData.hasActiveLoans === 'yes') {
         const repayVal = formData.activeLoansMonthlyRepayment
         if (repayVal == null || (typeof repayVal === 'string' && !repayVal.trim())) {

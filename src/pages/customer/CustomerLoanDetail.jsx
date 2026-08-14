@@ -75,15 +75,15 @@ export default function CustomerLoanDetail() {
   }, [USE_BACKEND, loan?.id])
 
   if (loading) {
-    return <div className="customer-portal-loading">Loading loan details...</div>
+    return <div className="customer-portal-loading">Loading credit details...</div>
   }
 
   if (forbidden || !loan) {
     return (
       <div className="customer-portal-error">
-        <h2>Loan not found</h2>
-        <p>This loan doesn’t belong to your account or doesn’t exist.</p>
-        <Link to="/portal/loans">Back to my loans</Link>
+        <h2>Credit not found</h2>
+        <p>This credit doesn’t belong to your account or doesn’t exist.</p>
+        <Link to="/portal/loans">Back to my credits</Link>
       </div>
     )
   }

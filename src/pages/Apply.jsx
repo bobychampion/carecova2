@@ -11,7 +11,7 @@ import { loanService } from '../services/loanService'
 import { applicationService } from '../services/applicationService'
 import { validateStep } from '../utils/validation'
 import ConsentCheckbox from '../components/ConsentCheckbox'
-import { NIGERIAN_STATES, PREFERRED_CONTACT_OPTIONS } from '../data/locationData'
+import { NIGERIAN_STATES, PREFERRED_CONTACT_OPTIONS, STATE_CITIES, STATE_LGAS } from '../data/locationData'
 import { trackingService } from '../services/trackingService'
 import MoneyInput from '../components/MoneyInput'
 import { useAffordabilityCheck } from '../hooks/useAffordabilityCheck'
@@ -98,6 +98,12 @@ const STATE_OPTIONS = [
   ...NIGERIAN_STATES.map((s, i) => ({ value: s, label: s, key: `state-${i}` })),
 ]
 
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
+const MONTH_OPTIONS = [{ value: '', label: 'Month' }, ...MONTHS.map((m, i) => ({ value: String(i + 1).padStart(2, '0'), label: m }))]
+const DAY_OPTIONS = [{ value: '', label: 'Day' }, ...Array.from({ length: 31 }, (_, i) => ({ value: String(i + 1).padStart(2, '0'), label: String(i + 1) }))]
+const currentYear = new Date().getFullYear()
+const YEAR_OPTIONS = [{ value: '', label: 'Year' }, ...Array.from({ length: 83 }, (_, i) => { const y = currentYear - 18 - i; return { value: String(y), label: String(y) } })]
+
 export default function Apply() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -115,6 +121,19 @@ export default function Apply() {
   const [existingWarningDismissed, setExistingWarningDismissed] = useState(false)
   const [errors, setErrors] = useState({})
   const [draftIdState, setDraftIdState] = useState(null)
+  const [dobDay, setDobDay] = useState('')
+  const [dobMonth, setDobMonth] = useState('')
+  const [dobYear, setDobYear] = useState('')
+
+  const handleDobChange = (part, value) => {
+    const d = part === 'day' ? value : dobDay
+    const m = part === 'month' ? value : dobMonth
+    const y = part === 'year' ? value : dobYear
+    if (part === 'day') setDobDay(value)
+    if (part === 'month') setDobMonth(value)
+    if (part === 'year') setDobYear(value)
+    if (d && m && y) handleChange('dateOfBirth', `${y}-${m}-${d}`)
+  }
 
   // Provider / hospital picker
   const [providerList, setProviderList] = useState([])
@@ -444,7 +463,17 @@ export default function Apply() {
               <Input label="Full name" type="text" placeholder="e.g. Adekunle Johnson" value={formData.fullName} onChange={(e) => handleChange('fullName', e.target.value)} onBlur={() => setErrors((prev) => ({ ...prev, ...validateStep(1, formData) }))} error={errors.fullName} required />
               <Input label="Phone number" type="tel" placeholder="0801 234 5678" value={formData.phone} onChange={(e) => handleChange('phone', e.target.value)} onBlur={() => { setErrors((prev) => ({ ...prev, ...validateStep(1, formData) })); checkExistingApplications(formData.phone) }} error={errors.phone} required />
               <Input label="Email (optional)" type="email" placeholder="name@example.com" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} onBlur={() => setErrors((prev) => ({ ...prev, ...validateStep(1, formData) }))} error={errors.email} />
-              <Input label="Date of birth" type="date" value={formData.dateOfBirth} onChange={(e) => handleChange('dateOfBirth', e.target.value)} error={errors.dateOfBirth} required />
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{ display: 'block', fontWeight: 600, marginBottom: 6, fontSize: '0.9rem' }}>
+                  Date of birth <span style={{ color: 'red' }}>*</span>
+                </label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Select options={DAY_OPTIONS} value={dobDay} onChange={(e) => handleDobChange('day', e.target.value)} style={{ flex: 1 }} />
+                  <Select options={MONTH_OPTIONS} value={dobMonth} onChange={(e) => handleDobChange('month', e.target.value)} style={{ flex: 2 }} />
+                  <Select options={YEAR_OPTIONS} value={dobYear} onChange={(e) => handleDobChange('year', e.target.value)} style={{ flex: 1.5 }} />
+                </div>
+                {errors.dateOfBirth && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: 4 }}>{errors.dateOfBirth}</p>}
+              </div>
               <Select label="Gender" options={GENDER_OPTIONS} value={formData.gender} onChange={(e) => handleChange('gender', e.target.value)} error={errors.gender} required />
 
               {existingApplications.length > 0 && !existingWarningDismissed && (
@@ -469,9 +498,9 @@ export default function Apply() {
                 {(formData.gpsLat && formData.gpsLng) && <span className="caption" style={{ marginLeft: '10px' }}>Location captured</span>}
               </div>
 
-              <Select label="State" options={STATE_OPTIONS} value={formData.state} onChange={(e) => handleChange('state', e.target.value)} onBlur={() => setErrors((prev) => ({ ...prev, ...validateStep(1, formData) }))} error={errors.state} required />
-              <Input label="City / Town" type="text" placeholder="e.g. Ikeja" value={formData.city} onChange={(e) => handleChange('city', e.target.value)} onBlur={() => setErrors((prev) => ({ ...prev, ...validateStep(1, formData) }))} error={errors.city} required />
-              <Input label="LGA" type="text" placeholder="Local Government Area" value={formData.lga} onChange={(e) => handleChange('lga', e.target.value)} onBlur={() => setErrors((prev) => ({ ...prev, ...validateStep(1, formData) }))} error={errors.lga} required />
+              <Select label="State" options={STATE_OPTIONS} value={formData.state} onChange={(e) => { handleChange('state', e.target.value); handleChange('city', ''); handleChange('lga', '') }} onBlur={() => setErrors((prev) => ({ ...prev, ...validateStep(1, formData) }))} error={errors.state} required />
+              <Select label="City / Town" options={[{ value: '', label: formData.state ? 'Select city' : 'Select state first' }, ...(STATE_CITIES[formData.state] || []).map((c) => ({ value: c, label: c }))]} value={formData.city} onChange={(e) => handleChange('city', e.target.value)} onBlur={() => setErrors((prev) => ({ ...prev, ...validateStep(1, formData) }))} error={errors.city} required />
+              <Select label="LGA (Local Government Area)" options={[{ value: '', label: formData.state ? 'Select LGA' : 'Select state first' }, ...(STATE_LGAS[formData.state] || []).map((l) => ({ value: l, label: l }))]} value={formData.lga} onChange={(e) => handleChange('lga', e.target.value)} onBlur={() => setErrors((prev) => ({ ...prev, ...validateStep(1, formData) }))} error={errors.lga} required />
               <Input label="Home address (optional)" type="text" placeholder="Street, area" value={formData.homeAddress} onChange={(e) => handleChange('homeAddress', e.target.value)} onBlur={() => setErrors((prev) => ({ ...prev, ...validateStep(1, formData) }))} error={errors.homeAddress} />
 
               <div className="form-section-label" style={{ gridColumn: '1 / -1', marginTop: '1rem', borderTop: '1px solid #ddd', paddingTop: '1rem' }}>
@@ -871,10 +900,10 @@ export default function Apply() {
               <MoneyInput label="Monthly expenses" placeholder="₦ 0.00" value={formData.monthlyExpenses} onChange={(v) => handleChange('monthlyExpenses', v)} error={errors.monthlyExpenses} required />
 
               <div className="form-section-label" style={{ gridColumn: '1 / -1', marginTop: '1rem', borderTop: '1px solid #ddd', paddingTop: '1rem' }}>
-                <h3>Loan Request</h3>
+                <h3>Credit Request</h3>
               </div>
 
-              <MoneyInput label="Requested loan amount" placeholder="₦ 0.00" value={formData.requestedAmount} onChange={(v) => handleChange('requestedAmount', v)} error={errors.requestedAmount} required />
+              <MoneyInput label="Requested credit amount" placeholder="₦ 0.00" value={formData.requestedAmount} onChange={(v) => handleChange('requestedAmount', v)} error={errors.requestedAmount} required />
               <Select label="Preferred repayment tenor" options={TENOR_OPTIONS} value={formData.preferredTenor} onChange={(e) => { handleChange('preferredTenor', e.target.value); const m = { '1': 1, '2': 2, '3-4': 4, '6': 6 }[e.target.value]; if (m) handleChange('preferredDuration', m) }} onBlur={() => setErrors((prev) => ({ ...prev, ...validateStep(3, formData) }))} error={errors.preferredTenor} required />
 
               {formData.requestedAmount >= 100000 && formData.preferredDuration >= 1 && (
@@ -891,11 +920,11 @@ export default function Apply() {
               </div>
 
               <Select label="Preferred repayment method" options={[{ value: '', label: 'Select method' }, ...availableRepaymentMethods]} value={formData.repaymentMethod} onChange={(e) => handleChange('repaymentMethod', e.target.value)} error={errors.repaymentMethod} required />
-              <Input label="Repayment Bank Name (optional)" type="text" placeholder="e.g. Access Bank" value={formData.repaymentBankName} onChange={(e) => handleChange('repaymentBankName', e.target.value)} />
-              <Input label="Repayment Account Number (optional)" type="text" placeholder="10 digits" value={formData.repaymentAccountNumber} onChange={(e) => handleChange('repaymentAccountNumber', e.target.value)} />
+              <Input label="Repayment Bank Name" type="text" placeholder="e.g. Access Bank" value={formData.repaymentBankName} onChange={(e) => handleChange('repaymentBankName', e.target.value)} error={errors.repaymentBankName} required />
+              <Input label="Repayment Account Number" type="text" inputMode="numeric" placeholder="10 digits" value={formData.repaymentAccountNumber} onChange={(e) => handleChange('repaymentAccountNumber', e.target.value.replace(/\D/g, '').slice(0, 10))} error={errors.repaymentAccountNumber} required />
 
               <div className="form-section-label" style={{ gridColumn: '1 / -1', marginTop: '1rem' }}>
-                <label>Do you currently have any active loans?</label>
+                <label>Do you currently have any active credits?</label>
                 <div className="tenure">
                   <button type="button" className={`chip ${formData.hasActiveLoans === true || formData.hasActiveLoans === 'yes' ? 'active' : ''}`} onClick={() => handleChange('hasActiveLoans', true)}>Yes</button>
                   <button type="button" className={`chip ${!formData.hasActiveLoans ? 'active' : ''}`} onClick={() => handleChange('hasActiveLoans', false)}>No</button>
@@ -1018,7 +1047,7 @@ export default function Apply() {
                   <ul>
                     <li><strong>Review</strong> – Our team will review your application (usually within 24–48 hours).</li>
                     <li><strong>Contact</strong> – We may call or email if we need any documents or details.</li>
-                    <li><strong>Decision</strong> – You’ll receive an update and, if approved, your loan offer.</li>
+                    <li><strong>Decision</strong> – You’ll receive an update and, if approved, your credit offer.</li>
                     <li><strong>Disbursement</strong> – Once you accept, funds go to your healthcare provider.</li>
                   </ul>
                 </div>
@@ -1027,7 +1056,7 @@ export default function Apply() {
                   <Button variant="ghost" onClick={() => navigate('/login')}>Sign in to my account</Button>
                   <Button variant="ghost" onClick={() => navigate('/')}>Return home</Button>
                 </div>
-                <p className="customer-welcome-portal-hint">Use the same phone number from this application to sign in and see all your loans in one place.</p>
+                <p className="customer-welcome-portal-hint">Use the same phone number from this application to sign in and see all your credits in one place.</p>
               </div>
             </div>
           </section>
@@ -1046,7 +1075,7 @@ export default function Apply() {
         <section className="page-hero mesh-bg-hero">
           <div className="container">
             <h1>Apply for Healthcare Financing</h1>
-            <p>Quick and easy healthcare loans for your peace of mind.</p>
+            <p>Quick and easy healthcare credit for your peace of mind.</p>
           </div>
         </section>
 

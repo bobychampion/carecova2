@@ -62,7 +62,7 @@ export default function CustomerOverview() {
         </div>
         <div className="customer-overview-card highlight">
           <div className="customer-overview-card-value">{activeLoans.length}</div>
-          <div className="customer-overview-card-label">Active loans</div>
+          <div className="customer-overview-card-label">Active credits</div>
         </div>
         {nextPayment && (
           <div className="customer-overview-card">
@@ -91,7 +91,7 @@ export default function CustomerOverview() {
           </ul>
         )}
         {loans.length > 0 && (
-          <Link to="/portal/loans" className="customer-overview-link">View all loans →</Link>
+          <Link to="/portal/loans" className="customer-overview-link">View all credits →</Link>
         )}
       </section>
     </div>

@@ -43,7 +43,7 @@ export default function HowItWorks() {
                   <p>
                     Our team reviews your application and performs affordability
                     assessments. We aim to provide a decision within 24-48 hours.
-                    Once approved, we'll notify you via SMS or email with your loan
+                    Once approved, we'll notify you via SMS or email with your credit
                     terms and repayment schedule.
                   </p>
                 </div>
@@ -55,7 +55,7 @@ export default function HowItWorks() {
                   <h2>Treated</h2>
                   <h3>Focus on your health while we settle the bill directly.</h3>
                   <p>
-                    Once your loan is approved, CareCova pays your partner hospital
+                    Once your credit is approved, CareCova pays your partner hospital
                     directly. No cash handling needed. You can focus entirely on your
                     treatment and recovery without worrying about upfront payments.
                   </p>
@@ -74,7 +74,7 @@ export default function HowItWorks() {
                     outstanding balance anytime through your application portal.
                   </p>
                   <Link to="/track">
-                    <Button variant="secondary">Track Your Loan</Button>
+                    <Button variant="secondary">Track Your Credit</Button>
                   </Link>
                 </div>
               </div>

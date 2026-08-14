@@ -36,12 +36,12 @@ export default function CustomerLoans() {
   }, [customer?.id, customer?.phone])
 
   if (loading) {
-    return <div className="customer-portal-loading">Loading your loans...</div>
+    return <div className="customer-portal-loading">Loading your credits...</div>
   }
 
   return (
     <div className="customer-loans-page">
-      <h1 className="customer-loans-title">My loans</h1>
+      <h1 className="customer-loans-title">My credits</h1>
       <p className="customer-loans-subtitle">View and manage your healthcare financing applications.</p>
 
       {loans.length === 0 ? (
