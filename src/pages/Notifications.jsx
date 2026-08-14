@@ -76,9 +76,11 @@ export default function Notifications() {
 
   const [tab, setTab] = useState('all')
   const [typeFilter, setTypeFilter] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
   const [page, setPage] = useState(1)
   const [limit] = useState(20)
   const [total, setTotal] = useState(0)
+  const isSuperAdmin = false
   const basePath = location.pathname.startsWith('/portal')
     ? '/portal/notifications'
     : location.pathname.startsWith('/credit')

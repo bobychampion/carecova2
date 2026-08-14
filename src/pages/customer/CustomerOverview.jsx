@@ -85,7 +85,12 @@ export default function CustomerOverview() {
             {loans.slice(0, 5).map((loan) => (
               <li key={loan.id}>
                 <Link to={`/portal/loans/${loan.id}`} className="customer-overview-list-item">
-                  <span className="customer-overview-list-id">{loan.id}</span>
+                  <span className="customer-overview-list-id">
+                    <span style={{ fontWeight: 600 }}>{loan.treatmentCategory || loan.hospital || 'Healthcare application'}</span>
+                    <span style={{ fontSize: '0.75rem', color: '#6b7280', display: 'block' }}>
+                      {loan.submittedAt || loan.createdAt ? new Date(loan.submittedAt || loan.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
+                    </span>
+                  </span>
                   <span className="customer-overview-list-amount">{formatNaira(loan.approvedAmount || loan.estimatedCost || loan.requestedAmount)}</span>
                   <StatusBadge status={loan.status} context="customer" />
                 </Link>

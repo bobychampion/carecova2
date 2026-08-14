@@ -123,9 +123,9 @@ export function getStatusBadgeConfig(status, financingStatus, viewContext = 'adm
       case APPLICATION_STATUS.APPROVED_FOR_DISBURSEMENT:
         return { label: 'Being processed', icon: '✓', className: 'status--approved' }
       case APPLICATION_STATUS.ACTIVE:
-        return { label: 'Loan active', icon: '●', className: 'status--active' }
+        return { label: 'Credit active', icon: '●', className: 'status--active' }
       case APPLICATION_STATUS.COMPLETED:
-        return { label: 'Loan completed', icon: '★', className: 'status--completed' }
+        return { label: 'Credit completed', icon: '★', className: 'status--completed' }
       case APPLICATION_STATUS.SALES_REJECTED:
       case APPLICATION_STATUS.ADMIN_REJECTED:
       case APPLICATION_STATUS.REJECTED:

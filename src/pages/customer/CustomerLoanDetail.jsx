@@ -35,9 +35,12 @@ export default function CustomerLoanDetail() {
   useEffect(() => {
     let cancelled = false
     async function load() {
-      if (!id || !customer?.id) return
+      if (!id || !customer?.phone) {
+        if (!cancelled) setLoading(false)
+        return
+      }
       try {
-        const myLoans = await loanService.getLoansByCustomerId(customer.id, customer.phone)
+        const myLoans = await loanService.getLoansByCustomerId(null, customer.phone)
         const found = myLoans.find((l) => l.id === id)
         if (!cancelled) {
           setLoan(found ? trackingService.enrichLoan(found) : null)
@@ -51,7 +54,7 @@ export default function CustomerLoanDetail() {
     }
     load()
     return () => { cancelled = true }
-  }, [id, customer?.id, customer?.phone])
+  }, [id, customer?.phone])
 
   useEffect(() => {
     let cancelled = false
@@ -149,7 +152,7 @@ export default function CustomerLoanDetail() {
   return (
     <div className="customer-loan-detail">
       <div className="customer-loan-detail-header">
-        <Link to="/portal/loans" className="customer-loan-detail-back">← My loans</Link>
+        <Link to="/portal/loans" className="customer-loan-detail-back">← My credits</Link>
         <h1 className="customer-loan-detail-title">Application {loan.id}</h1>
         <StatusBadge status={loan.status} context="customer" />
       </div>
