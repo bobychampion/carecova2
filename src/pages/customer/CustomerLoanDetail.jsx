@@ -85,7 +85,7 @@ export default function CustomerLoanDetail() {
     return (
       <div className="customer-portal-error">
         <h2>Credit not found</h2>
-        <p>This credit doesn’t belong to your account or doesn’t exist.</p>
+        <p>This credit doesn't belong to your account or doesn't exist.</p>
         <Link to="/portal/loans">Back to my credits</Link>
       </div>
     )
@@ -334,21 +334,21 @@ export default function CustomerLoanDetail() {
         <h2>What you applied for</h2>
         <dl className="customer-loan-detail-dl">
           <dt>Patient name</dt>
-          <dd>{loan.fullName || loan.patientName || ‘—‘}</dd>
+          <dd>{loan.fullName || loan.patientName || '—'}</dd>
           <dt>Treatment</dt>
-          <dd>{loan.treatmentCategory || ‘—‘}</dd>
+          <dd>{loan.treatmentCategory || '—'}</dd>
           {loan.procedureOrService && <><dt>Procedure / service</dt><dd>{loan.procedureOrService}</dd></>}
           <dt>Hospital / facility</dt>
-          <dd>{loan.hospital || loan.hospitalName || ‘—‘}</dd>
+          <dd>{loan.hospital || loan.hospitalName || '—'}</dd>
           <dt>Amount requested</dt>
           <dd>{formatNaira(loan.estimatedCost || loan.requestedAmount)}</dd>
           {(loan.preferredDuration || loan.preferredTenor) && (
             <><dt>Preferred tenor</dt><dd>{loan.preferredDuration ? `${loan.preferredDuration} months` : loan.preferredTenor}</dd></>
           )}
           <dt>Repayment method</dt>
-          <dd>{loan.repaymentMethod ? loan.repaymentMethod.replace(/_/g, ‘ ‘) : ‘—‘}</dd>
+          <dd>{loan.repaymentMethod ? loan.repaymentMethod.replace(/_/g, ' ') : '—'}</dd>
           <dt>Date submitted</dt>
-          <dd>{loan.submittedAt || loan.createdAt ? new Date(loan.submittedAt || loan.createdAt).toLocaleDateString(‘en-GB’, { day: ‘numeric’, month: ‘long’, year: ‘numeric’ }) : ‘—‘}</dd>
+          <dd>{loan.submittedAt || loan.createdAt ? new Date(loan.submittedAt || loan.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}</dd>
         </dl>
         {!isApproved && !isActiveOrCompleted && (
           <p className="customer-loan-detail-status-note">Our team will review your application and contact you. You can also track status here at any time.</p>
