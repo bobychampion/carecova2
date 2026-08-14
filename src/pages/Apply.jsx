@@ -1046,8 +1046,8 @@ export default function Apply() {
                 <div className="customer-welcome-next">
                   <h3>Your application journey</h3>
                   <ApplicationStages status="pending" submittedAt={new Date().toISOString()} />
-                  <p style={{ fontSize: ‘0.8125rem’, color: ‘#6b7280’, marginTop: 4 }}>
-                    Our team will review your application within 24–48 hours. We’ll contact you if we need additional documents.
+                  <p style={{ fontSize: '0.8125rem', color: '#6b7280', marginTop: 4 }}>
+                    Our team reviews applications within 24-48 hours and will contact you if additional documents are needed.
                   </p>
                 </div>
                 <div className="success-actions customer-welcome-actions">
