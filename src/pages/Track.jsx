@@ -1,51 +1,108 @@
 import { useState } from 'react'
-import { useSearchParams, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import Button from '../components/Button'
 import Input from '../components/Input'
-import StatusBadge from '../components/StatusBadge'
-import RepaymentSchedule from '../components/RepaymentSchedule'
-import RepaymentDashboard from '../components/RepaymentDashboard'
-import { trackingService } from '../services/trackingService'
-import ApplicationStages from '../components/ApplicationStages'
+import { customerAuthService } from '../services/customerAuthService'
 
-const asNaira = (nairaValue, koboValue) => {
-  if (typeof nairaValue === 'number' && Number.isFinite(nairaValue)) return nairaValue
-  const fromKobo = Number(koboValue)
-  return Number.isFinite(fromKobo) ? fromKobo / 100 : 0
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+
+function isTrackingCode(value) {
+  return /^[A-Z]{2}-\d{4}-[A-Z0-9]+$/i.test(value.trim())
 }
 
-const formatNaira = (value) => `₦${Math.round(Number(value || 0)).toLocaleString()}`
-
 export default function Track() {
-  const [searchParams] = useSearchParams()
-  const [loanId, setLoanId] = useState(searchParams.get('loanId') || '')
-  const [loan, setLoan] = useState(null)
+  const navigate = useNavigate()
+  const [step, setStep] = useState('code')
+  const [lookup, setLookup] = useState('') // the raw value user entered (code or phone)
+  const [inputValue, setInputValue] = useState('')
+  const [otpCode, setOtpCode] = useState('')
+  const [maskedEmail, setMaskedEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const handleTrack = async (e) => {
+  const handleLookup = async (e) => {
     e.preventDefault()
-
-    if (!loanId.trim()) {
-      setError('Please enter an application ID')
-      return
-    }
+    const value = inputValue.trim().toUpperCase()
+    if (!value) { setError('Please enter your tracking number or phone number'); return }
 
     setLoading(true)
     setError('')
-    setLoan(null)
 
     try {
-      const result = await trackingService.trackLoan(loanId.trim())
-      setLoan(result)
+      const body = isTrackingCode(value) ? { applicationCode: value } : { phone: value }
+
+      const res = await fetch(`${API_BASE}/api/customers/otp/request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.message || 'Could not send code')
+
+      setLookup(value)
+      setMaskedEmail(data.maskedEmail || '')
+      setStep('otp')
     } catch (err) {
-      setError('Application not found. Please check your application ID.')
-      setLoan(null)
+      setError(err.message || 'Could not find an application with that tracking number. Please check and try again.')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleVerify = async (e) => {
+    e.preventDefault()
+    if (otpCode.length < 6) { setError('Enter the 6-digit code'); return }
+
+    setLoading(true)
+    setError('')
+
+    try {
+      // Pass either applicationCode or phone depending on what was used for lookup
+      const body = isTrackingCode(lookup)
+        ? { applicationCode: lookup, code: otpCode }
+        : { phone: lookup, code: otpCode }
+
+      const res = await fetch(`${API_BASE}/api/customers/otp/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.message || 'Invalid or expired code')
+
+      // Store session (same as customerAuthService.verifyOtp)
+      const session = {
+        token: data.token,
+        phone: data.customer?.phone || '',
+        email: data.customer?.email || '',
+        fullName: data.customer?.name || '',
+        applications: data.applications || [],
+        loggedInAt: new Date().toISOString(),
+      }
+      try { localStorage.setItem('carecova_customer_session', JSON.stringify(session)) } catch {}
+
+      navigate('/portal')
+    } catch (err) {
+      setError(err.message || 'Invalid or expired code. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResend = async () => {
+    setError('')
+    setLoading(true)
+    try {
+      const body = isTrackingCode(lookup) ? { applicationCode: lookup } : { phone: lookup }
+      await fetch(`${API_BASE}/api/customers/otp/request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+    } catch {}
+    setLoading(false)
   }
 
   return (
@@ -55,104 +112,69 @@ export default function Track() {
         <section className="page-hero">
           <div className="container">
             <h1>Track Your Application</h1>
-            <p>
-              Enter your application ID to see the current status and repayment
-              schedule.
-            </p>
+            <p>Enter your tracking number to view your application status and details.</p>
           </div>
         </section>
 
         <section className="section">
           <div className="container">
             <div className="track-card">
-              <form onSubmit={handleTrack} className="track-form">
-                <Input
-                  label="Application ID"
-                  type="text"
-                  placeholder="Enter Application ID (e.g. LN-123456)"
-                  value={loanId}
-                  onChange={(e) => setLoanId(e.target.value.toUpperCase())}
-                  error={error}
-                />
-                <Button type="submit" variant="primary" disabled={loading}>
-                  {loading ? 'Tracking...' : 'Track Status'}
-                </Button>
-              </form>
-            </div>
-
-            {loan && (
-              <>
-                <div className="track-welcome-bar">
-                  <p className="track-welcome-text">
-                    Welcome back{loan.fullName || loan.patientName ? `, ${(loan.fullName || loan.patientName).split(' ')[0]}` : ''}!
+              {step === 'code' ? (
+                <form onSubmit={handleLookup} className="track-form">
+                  <p style={{ color: '#6b7280', marginBottom: '16px', fontSize: '0.9375rem' }}>
+                    Enter the tracking number from your confirmation email (e.g. <strong>CV-2026-WYZGW8</strong>), or your registered phone number.
                   </p>
-                  {loan.id === 'LN-DEMO' && (
-                    <span className="track-demo-badge" title="Sample customer journey for presentations">Presentation demo</span>
-                  )}
-                </div>
-                {loan.status === 'approved' && !loan.offerAcceptedAt ? (
-                  <div className="offer-cta-card">
-                    <h3>Your application has been approved</h3>
-                    <p>Review and accept your offer to proceed with your loan.</p>
-                    <Link to={`/offer/${loan.id}`}>
-                      <Button variant="primary">View and accept your offer</Button>
-                    </Link>
-                  </div>
-                ) : (loan.status === 'approved' && loan.offerAcceptedAt) || loan.status === 'active' ? (
-                  <RepaymentDashboard loan={loan} />
-                ) : (
-                  <div className="loan-details">
-                    <div className="loan-header">
-                      <h2>Application Details - {loan.id}</h2>
-                      <StatusBadge status={loan.status} />
-                    </div>
-                    <ApplicationStages status={loan.status} submittedAt={loan.submittedAt} />
-
-                    <div className="loan-info-grid">
-                      <div className="info-item">
-                        <strong>Patient Name:</strong>
-                        <p>{loan.patientName}</p>
-                      </div>
-                      <div className="info-item">
-                        <strong>Hospital:</strong>
-                        <p>{loan.hospital}</p>
-                      </div>
-                      <div className="info-item">
-                        <strong>Treatment Category:</strong>
-                        <p>{loan.treatmentCategory}</p>
-                      </div>
-                      <div className="info-item">
-                        <strong>Estimated Cost:</strong>
-                        <p>{formatNaira(asNaira(loan.estimatedCost, loan.estimatedCostKobo) || asNaira(loan.requestedAmount, loan.requestedAmountKobo))}</p>
-                      </div>
-                      <div className="info-item">
-                        <strong>Status:</strong>
-                        <p>
-                          <StatusBadge status={loan.status} />
-                        </p>
-                      </div>
-                      <div className="info-item">
-                        <strong>Submitted:</strong>
-                        <p>{new Date(loan.submittedAt).toLocaleDateString()}</p>
-                      </div>
-                      {loan.approvedAt && (
-                        <div className="info-item">
-                          <strong>Approved:</strong>
-                          <p>{new Date(loan.approvedAt).toLocaleDateString()}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {loan.rejectionReason && (
-                      <div className="rejection-notice">
-                        <h3>Rejection Reason</h3>
-                        <p>{loan.rejectionReason}</p>
-                      </div>
+                  {error && <div className="customer-login-error" style={{ marginBottom: '12px' }}>{error}</div>}
+                  <Input
+                    label="Tracking number or phone number"
+                    type="text"
+                    placeholder="CV-2026-XXXXXX or 08012345678"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    required
+                  />
+                  <Button type="submit" variant="primary" className="full-width" disabled={loading}>
+                    {loading ? 'Looking up...' : 'Continue'}
+                  </Button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerify} className="track-form">
+                  <div className="customer-login-phone-sent">
+                    {maskedEmail ? (
+                      <p>A 6-digit verification code was sent to <strong>{maskedEmail}</strong>.</p>
+                    ) : (
+                      <p>If we have a record for this, a code has been sent to your registered email.</p>
                     )}
+                    <button type="button" className="link-button" onClick={() => { setStep('code'); setError(''); setOtpCode('') }}>
+                      Try a different tracking number
+                    </button>
                   </div>
-                )}
-              </>
-            )}
+                  {error && <div className="customer-login-error" style={{ marginBottom: '12px' }}>{error}</div>}
+                  <Input
+                    label="Verification code"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="6-digit code"
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                    required
+                  />
+                  <Button type="submit" variant="primary" className="full-width" disabled={loading || otpCode.length < 6}>
+                    {loading ? 'Verifying...' : 'Verify and view my application'}
+                  </Button>
+                  <button
+                    type="button"
+                    className="link-button"
+                    style={{ marginTop: 8, display: 'block', textAlign: 'center' }}
+                    onClick={handleResend}
+                    disabled={loading}
+                  >
+                    Resend code
+                  </button>
+                </form>
+              )}
+            </div>
           </div>
         </section>
       </main>
