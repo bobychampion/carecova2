@@ -122,6 +122,7 @@ export default function Apply() {
   const [existingWarningDismissed, setExistingWarningDismissed] = useState(false)
   const [errors, setErrors] = useState({})
   const [draftIdState, setDraftIdState] = useState(null)
+  const [resumableDraft, setResumableDraft] = useState(null)
   const [dobDay, setDobDay] = useState('')
   const [dobMonth, setDobMonth] = useState('')
   const [dobYear, setDobYear] = useState('')
@@ -250,6 +251,12 @@ export default function Apply() {
           }
         } catch (error) {
           console.error('Error loading draft:', error)
+        }
+      } else {
+        // Check for a resumable draft from a previous session
+        const last = await applicationService.getLastDraft().catch(() => null)
+        if (last && last.data && (last.data.fullName || last.data.phone)) {
+          setResumableDraft(last)
         }
       }
     }
@@ -421,6 +428,7 @@ export default function Apply() {
     try {
       const result = await loanService.submitApplication(buildPayload())
       if (draftIdState) await applicationService.deleteDraft(draftIdState)
+      applicationService.clearLastDraft()
       setLoanId(result.id)
       setApplicationCode(result.applicationCode || null)
       setSubmitted(true)
@@ -1080,6 +1088,45 @@ export default function Apply() {
 
         <section className="section">
           <div className="container">
+            {resumableDraft && (
+              <div style={{ background: '#fffbeb', border: '1.5px solid #f59e0b', borderRadius: '10px', padding: '14px 18px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                <div>
+                  <p style={{ margin: 0, fontWeight: 700, color: '#92400e', fontSize: '0.9375rem' }}>You have an unfinished application</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '0.8125rem', color: '#b45309' }}>
+                    Saved {new Date(resumableDraft.savedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} — Step {resumableDraft.step} of {TOTAL_STEPS}
+                    {resumableDraft.data?.fullName ? ` · ${resumableDraft.data.fullName}` : ''}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                  <button
+                    type="button"
+                    style={{ background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '7px', padding: '8px 18px', fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem' }}
+                    onClick={() => {
+                      setFormData((prev) => ({ ...prev, ...resumableDraft.data }))
+                      setCurrentStep(resumableDraft.step || 1)
+                      setDraftIdState(resumableDraft.id)
+                      const dob = resumableDraft.data?.dateOfBirth || ''
+                      if (dob) {
+                        const [y, m, d] = dob.split('-')
+                        if (y) setDobYear(y)
+                        if (m) setDobMonth(m)
+                        if (d) setDobDay(d)
+                      }
+                      setResumableDraft(null)
+                    }}
+                  >
+                    Continue
+                  </button>
+                  <button
+                    type="button"
+                    style={{ background: 'transparent', color: '#92400e', border: '1.5px solid #f59e0b', borderRadius: '7px', padding: '8px 14px', cursor: 'pointer', fontSize: '0.875rem' }}
+                    onClick={() => { applicationService.clearLastDraft(); setResumableDraft(null) }}
+                  >
+                    Start fresh
+                  </button>
+                </div>
+              </div>
+            )}
             <ProgressIndicator currentStep={currentStep} totalSteps={TOTAL_STEPS} />
 
             <form className="apply-form-wizard glass-card" style={{ padding: '2rem', marginTop: '1rem' }} onSubmit={handleSubmit}>

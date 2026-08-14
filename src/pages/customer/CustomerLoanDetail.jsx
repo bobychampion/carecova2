@@ -330,24 +330,30 @@ export default function CustomerLoanDetail() {
         </>
       )}
 
-      {!isApproved && !isActiveOrCompleted && (
-        <div className="customer-loan-detail-info">
-          <h2>Application details</h2>
-          <dl className="customer-loan-detail-dl">
-            <dt>Patient</dt>
-            <dd>{loan.fullName || loan.patientName}</dd>
-            <dt>Hospital</dt>
-            <dd>{loan.hospital || '—'}</dd>
-            <dt>Treatment</dt>
-            <dd>{loan.treatmentCategory || '—'}</dd>
-            <dt>Amount requested</dt>
-            <dd>{formatNaira(loan.estimatedCost || loan.requestedAmount)}</dd>
-            <dt>Submitted</dt>
-            <dd>{new Date(loan.submittedAt).toLocaleDateString()}</dd>
-          </dl>
-          <p className="customer-loan-detail-status-note">We’ll review your application and get in touch. You can track status here or via the link we sent you.</p>
-        </div>
-      )}
+      <div className="customer-loan-detail-info">
+        <h2>What you applied for</h2>
+        <dl className="customer-loan-detail-dl">
+          <dt>Patient name</dt>
+          <dd>{loan.fullName || loan.patientName || ‘—‘}</dd>
+          <dt>Treatment</dt>
+          <dd>{loan.treatmentCategory || ‘—‘}</dd>
+          {loan.procedureOrService && <><dt>Procedure / service</dt><dd>{loan.procedureOrService}</dd></>}
+          <dt>Hospital / facility</dt>
+          <dd>{loan.hospital || loan.hospitalName || ‘—‘}</dd>
+          <dt>Amount requested</dt>
+          <dd>{formatNaira(loan.estimatedCost || loan.requestedAmount)}</dd>
+          {(loan.preferredDuration || loan.preferredTenor) && (
+            <><dt>Preferred tenor</dt><dd>{loan.preferredDuration ? `${loan.preferredDuration} months` : loan.preferredTenor}</dd></>
+          )}
+          <dt>Repayment method</dt>
+          <dd>{loan.repaymentMethod ? loan.repaymentMethod.replace(/_/g, ‘ ‘) : ‘—‘}</dd>
+          <dt>Date submitted</dt>
+          <dd>{loan.submittedAt || loan.createdAt ? new Date(loan.submittedAt || loan.createdAt).toLocaleDateString(‘en-GB’, { day: ‘numeric’, month: ‘long’, year: ‘numeric’ }) : ‘—‘}</dd>
+        </dl>
+        {!isApproved && !isActiveOrCompleted && (
+          <p className="customer-loan-detail-status-note">Our team will review your application and contact you. You can also track status here at any time.</p>
+        )}
+      </div>
     </div>
   )
 }

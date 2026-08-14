@@ -1,4 +1,5 @@
 const DRAFT_STORAGE_KEY = 'carecova_drafts'
+const LAST_DRAFT_KEY = 'carecova_last_draft_id'
 const DRAFT_EXPIRY_DAYS = 30
 
 const generateDraftId = () => {
@@ -60,6 +61,7 @@ export const applicationService = {
 
         filteredDrafts.push(draft)
         saveDrafts(filteredDrafts)
+        try { localStorage.setItem(LAST_DRAFT_KEY, draft.id) } catch {}
 
         resolve(draft)
       }, 100)
@@ -122,6 +124,26 @@ export const applicationService = {
    * @param {string} userId - User identifier
    * @returns {Promise<void>}
    */
+  getLastDraft: async () => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        try {
+          const lastId = localStorage.getItem(LAST_DRAFT_KEY)
+          if (!lastId) return resolve(null)
+          const drafts = getDrafts()
+          const draft = drafts.find((d) => d.id === lastId && !isDraftExpired(d))
+          resolve(draft || null)
+        } catch {
+          resolve(null)
+        }
+      }, 50)
+    })
+  },
+
+  clearLastDraft: () => {
+    try { localStorage.removeItem(LAST_DRAFT_KEY) } catch {}
+  },
+
   autoSaveDraft: async (formData, currentStep, userId) => {
     if (!userId) return
 
