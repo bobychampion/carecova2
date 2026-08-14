@@ -12,6 +12,7 @@ export default function CustomerLogin() {
   const [step, setStep] = useState('phone')
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
+  const [maskedEmail, setMaskedEmail] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -22,10 +23,11 @@ export default function CustomerLogin() {
     const result = await requestOtp(phone)
     setLoading(false)
     if (result.success) {
+      setMaskedEmail(result.maskedEmail || '')
       setStep('verify')
       setCode('')
     } else {
-      setError(result.error || 'Could not send code')
+      setError(result.error || 'Could not send code. Please check your phone number.')
     }
   }
 
@@ -38,7 +40,7 @@ export default function CustomerLogin() {
     if (result.success) {
       navigate('/portal')
     } else {
-      setError(result.error || 'Invalid code')
+      setError(result.error || 'Invalid or expired code. Please try again.')
     }
   }
 
@@ -51,7 +53,7 @@ export default function CustomerLogin() {
             <div className="customer-login-card">
               <h1 className="customer-login-title">Sign in to your account</h1>
               <p className="customer-login-subtitle">
-                Use the phone number from your application to access your loans and repayments.
+                Use the phone number from your application to access your credits and repayments.
               </p>
 
               {step === 'phone' ? (
@@ -72,13 +74,21 @@ export default function CustomerLogin() {
               ) : (
                 <form onSubmit={handleVerify} className="customer-login-form">
                   {error && <div className="customer-login-error">{error}</div>}
-                  <p className="customer-login-phone-sent">
-                    Code sent to <strong>{phone}</strong>. <button type="button" className="link-button" onClick={() => setStep('phone')}>Change number</button>
-                  </p>
+                  <div className="customer-login-phone-sent">
+                    {maskedEmail ? (
+                      <p>A 6-digit code was sent to <strong>{maskedEmail}</strong>.</p>
+                    ) : (
+                      <p>If we have a record for this number, a code has been sent to your email.</p>
+                    )}
+                    <button type="button" className="link-button" onClick={() => { setStep('phone'); setError('') }}>
+                      Use a different number
+                    </button>
+                  </div>
                   <Input
                     label="Verification code"
                     type="text"
-                    placeholder="123456"
+                    inputMode="numeric"
+                    placeholder="6-digit code"
                     maxLength={6}
                     value={code}
                     onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
@@ -87,12 +97,20 @@ export default function CustomerLogin() {
                   <Button type="submit" variant="primary" className="full-width" disabled={loading || code.length < 6}>
                     {loading ? 'Signing in...' : 'Verify and sign in'}
                   </Button>
+                  <button
+                    type="button"
+                    className="link-button"
+                    style={{ marginTop: 8, display: 'block', textAlign: 'center' }}
+                    onClick={handleRequestCode}
+                    disabled={loading}
+                  >
+                    Resend code
+                  </button>
                 </form>
               )}
 
-              <p className="customer-login-demo">Demo: use any 10-digit phone, then code <strong>123456</strong></p>
               <div className="customer-login-links">
-                <Link to="/track">Track by application ID (no account)</Link>
+                <Link to="/track">Track by application ID (no account needed)</Link>
                 <Link to="/">Back to home</Link>
               </div>
             </div>

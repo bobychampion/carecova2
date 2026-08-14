@@ -29,8 +29,8 @@ export function useCustomerAuth() {
 
   const requestOtp = async (phone) => {
     try {
-      await customerAuthService.requestOtp(phone)
-      return { success: true }
+      const data = await customerAuthService.requestOtp(phone)
+      return { success: true, maskedEmail: data?.maskedEmail || null }
     } catch (err) {
       return { success: false, error: err.message }
     }

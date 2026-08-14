@@ -8,6 +8,7 @@ import StatusBadge from '../components/StatusBadge'
 import RepaymentSchedule from '../components/RepaymentSchedule'
 import RepaymentDashboard from '../components/RepaymentDashboard'
 import { trackingService } from '../services/trackingService'
+import ApplicationStages from '../components/ApplicationStages'
 
 const asNaira = (nairaValue, koboValue) => {
   if (typeof nairaValue === 'number' && Number.isFinite(nairaValue)) return nairaValue
@@ -105,6 +106,7 @@ export default function Track() {
                       <h2>Application Details - {loan.id}</h2>
                       <StatusBadge status={loan.status} />
                     </div>
+                    <ApplicationStages status={loan.status} submittedAt={loan.submittedAt} />
 
                     <div className="loan-info-grid">
                       <div className="info-item">

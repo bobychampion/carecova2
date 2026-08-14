@@ -4,19 +4,41 @@ const API_ROOT = ((import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')) 
 
 const fmt = (n) => n != null ? `₦${Number(n).toLocaleString('en-NG', { minimumFractionDigits: 0 })}` : '—'
 
+// Local reducing-balance calculation used when P2Vest API is unavailable
+function calcLocal(amount, tenure) {
+  const monthlyRate = 0.04 // 4% per month (indicative)
+  const r = monthlyRate
+  const n = tenure
+  const installment = r === 0 ? amount / n : (amount * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1)
+  let balance = amount
+  const schedules = []
+  let totalInterest = 0
+  for (let i = 1; i <= n; i++) {
+    const interest = balance * r
+    const principal = installment - interest
+    totalInterest += interest
+    balance = Math.max(balance - principal, 0)
+    schedules.push({ month: i, payment: Math.round(installment), principal: Math.round(principal), interest: Math.round(interest), balance: Math.round(balance) })
+  }
+  return {
+    monthlyInstallment: Math.round(installment),
+    totalRepayable: Math.round(installment * n),
+    totalInterest: Math.round(totalInterest),
+    interestRate: (monthlyRate * 100).toFixed(0),
+    schedules,
+    _isEstimate: true,
+  }
+}
+
 async function fetchSchedule(amount, tenure, creditScore) {
   const params = new URLSearchParams({ amount: String(amount), tenure: String(tenure) })
   if (creditScore) params.set('creditScore', String(creditScore))
-  const res = await fetch(`${API_ROOT}/partners/p2vest/calculator?${params}`)
-  if (!res.ok) {
-    let msg = 'Could not calculate schedule'
-    try {
-      const body = await res.json()
-      if (body?.message) msg = body.message
-    } catch {}
-    throw new Error(msg)
-  }
-  return res.json()
+  try {
+    const res = await fetch(`${API_ROOT}/partners/p2vest/calculator?${params}`)
+    if (res.ok) return await res.json()
+  } catch {}
+  // Fall back to local calculation when API is unavailable
+  return calcLocal(amount, tenure)
 }
 
 // Standalone widget — works embedded in Apply form or on homepage
@@ -153,7 +175,7 @@ export default function LoanCalculator({ initialAmount = '', initialTenure = '',
           )}
 
           <p style={{ margin: '8px 0 0', fontSize: '0.7rem', color: '#9ca3af', textAlign: 'center' }}>
-            Estimates are provisional and subject to credit assessment. Actual rates may vary.
+            {result._isEstimate ? '⚠️ Indicative estimate at 4%/month — final rate subject to credit assessment.' : 'Estimates are provisional and subject to credit assessment. Actual rates may vary.'}
           </p>
         </>
       )}

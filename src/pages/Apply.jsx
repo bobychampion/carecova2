@@ -17,6 +17,7 @@ import MoneyInput from '../components/MoneyInput'
 import { useAffordabilityCheck } from '../hooks/useAffordabilityCheck'
 import { uploadFileToCloudinary } from '../services/cloudinaryService'
 import LoanCalculator from '../components/LoanCalculator'
+import ApplicationStages from '../components/ApplicationStages'
 
 const TOTAL_STEPS = 5
 
@@ -1043,13 +1044,11 @@ export default function Apply() {
                   <p className="customer-welcome-id-hint">Save this reference to track your application. A confirmation has been sent to your email.</p>
                 </div>
                 <div className="customer-welcome-next">
-                  <h3>What happens next?</h3>
-                  <ul>
-                    <li><strong>Review</strong> – Our team will review your application (usually within 24–48 hours).</li>
-                    <li><strong>Contact</strong> – We may call or email if we need any documents or details.</li>
-                    <li><strong>Decision</strong> – You’ll receive an update and, if approved, your credit offer.</li>
-                    <li><strong>Disbursement</strong> – Once you accept, funds go to your healthcare provider.</li>
-                  </ul>
+                  <h3>Your application journey</h3>
+                  <ApplicationStages status="pending" submittedAt={new Date().toISOString()} />
+                  <p style={{ fontSize: ‘0.8125rem’, color: ‘#6b7280’, marginTop: 4 }}>
+                    Our team will review your application within 24–48 hours. We’ll contact you if we need additional documents.
+                  </p>
                 </div>
                 <div className="success-actions customer-welcome-actions">
                   <Button variant="primary" onClick={() => navigate(`/track?loanId=${loanId || ''}`)} disabled={!loanId}>Track your application</Button>
