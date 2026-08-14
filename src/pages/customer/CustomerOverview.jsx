@@ -20,9 +20,12 @@ export default function CustomerOverview() {
   useEffect(() => {
     let cancelled = false
     async function load() {
-      if (!customer?.id) return
+      if (!customer?.phone) {
+        if (!cancelled) setLoading(false)
+        return
+      }
       try {
-        const list = await loanService.getLoansByCustomerId(customer.id, customer.phone)
+        const list = await loanService.getLoansByCustomerId(null, customer.phone)
         if (!cancelled) setLoans(list)
       } finally {
         if (!cancelled) setLoading(false)
@@ -30,7 +33,7 @@ export default function CustomerOverview() {
     }
     load()
     return () => { cancelled = true }
-  }, [customer?.id, customer?.phone])
+  }, [customer?.phone])
 
   const activeLoans = loans.filter((l) => l.status === 'active' || l.status === 'overdue')
   const pendingOrApproved = loans.filter((l) => ['pending', 'approved', 'pending_disbursement'].includes(l.status))

@@ -22,9 +22,12 @@ export default function CustomerLoans() {
   useEffect(() => {
     let cancelled = false
     async function load() {
-      if (!customer?.id) return
+      if (!customer?.phone) {
+        if (!cancelled) setLoading(false)
+        return
+      }
       try {
-        const list = await loanService.getLoansByCustomerId(customer.id, customer.phone)
+        const list = await loanService.getLoansByCustomerId(null, customer.phone)
         const enriched = list.map((item) => trackingService.enrichLoan(item))
         if (!cancelled) setLoans(enriched)
       } finally {
@@ -33,7 +36,7 @@ export default function CustomerLoans() {
     }
     load()
     return () => { cancelled = true }
-  }, [customer?.id, customer?.phone])
+  }, [customer?.phone])
 
   if (loading) {
     return <div className="customer-portal-loading">Loading your credits...</div>
