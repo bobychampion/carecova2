@@ -160,6 +160,8 @@ export default function Apply() {
     // Hospital Triangulation MVP
     hospitalName: '',
     hospitalAddress: '',
+    hospitalPhone: '',
+    hospitalEmail: '',
     isPartnerSuggested: false,
     suggestedHospitalId: '',
 
@@ -328,6 +330,8 @@ export default function Apply() {
       hospital: {
         name: formData.hospitalName,
         address: formData.hospitalAddress,
+        phone: formData.hospitalPhone || undefined,
+        email: formData.hospitalEmail || undefined,
         isPartnerSuggested: formData.isPartnerSuggested,
         suggestedHospitalId: formData.suggestedHospitalId
       },
@@ -367,6 +371,10 @@ export default function Apply() {
     // Add custom dynamic required checks
     if (currentStep === 1) {
       if (!formData.hospitalName) stepErrors.hospitalName = "Hospital name is required";
+      // Custom (non-partner) hospitals require a contact number so we can reach out
+      if (!formData.isPartnerSuggested && !formData.hospitalPhone?.trim()) {
+        stepErrors.hospitalPhone = "Hospital contact number is required";
+      }
       if (!formData.documents?.id_document) stepErrors.id_document = "Government-issued ID is required";
     }
     if (currentStep === 3) {
@@ -667,24 +675,48 @@ export default function Apply() {
                   </div>
                 ) : (
                   /* Custom entry mode */
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    <Input
-                      label="Hospital / Clinic name"
-                      type="text"
-                      placeholder="e.g. Lagos University Teaching Hospital"
-                      value={formData.hospitalName}
-                      onChange={(e) => { handleChange('hospitalName', e.target.value); handleChange('isPartnerSuggested', false) }}
-                      onBlur={() => setErrors((prev) => ({ ...prev, ...validateStep(1, formData) }))}
-                      error={errors.hospitalName}
-                      required
-                    />
-                    <Input
-                      label="Hospital area / address (optional)"
-                      type="text"
-                      placeholder="Street, area or city"
-                      value={formData.hospitalAddress}
-                      onChange={(e) => { handleChange('hospitalAddress', e.target.value); handleChange('isPartnerSuggested', false) }}
-                    />
+                  <div>
+                    <div style={{
+                      marginBottom: '12px', padding: '10px 14px', borderRadius: '8px',
+                      background: '#fefce8', border: '1px solid #fde68a', fontSize: '0.8125rem', color: '#92400e',
+                    }}>
+                      Your hospital isn't on our partner list yet — that's okay. Fill in the details below and we'll reach out to establish a partnership so you can get financed there.
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <Input
+                        label="Hospital / Clinic name"
+                        type="text"
+                        placeholder="e.g. City Medical Centre"
+                        value={formData.hospitalName}
+                        onChange={(e) => { handleChange('hospitalName', e.target.value); handleChange('isPartnerSuggested', false) }}
+                        onBlur={() => setErrors((prev) => ({ ...prev, ...validateStep(1, formData) }))}
+                        error={errors.hospitalName}
+                        required
+                      />
+                      <Input
+                        label="Hospital contact number"
+                        type="tel"
+                        placeholder="e.g. 08012345678"
+                        value={formData.hospitalPhone}
+                        onChange={(e) => handleChange('hospitalPhone', e.target.value.replace(/[^\d+\s\-()]/g, ''))}
+                        error={errors.hospitalPhone}
+                        required
+                      />
+                      <Input
+                        label="Hospital area / address (optional)"
+                        type="text"
+                        placeholder="Street, area or city"
+                        value={formData.hospitalAddress}
+                        onChange={(e) => { handleChange('hospitalAddress', e.target.value); handleChange('isPartnerSuggested', false) }}
+                      />
+                      <Input
+                        label="Hospital email (optional)"
+                        type="email"
+                        placeholder="hospital@example.com"
+                        value={formData.hospitalEmail}
+                        onChange={(e) => handleChange('hospitalEmail', e.target.value)}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
@@ -983,7 +1015,10 @@ export default function Apply() {
                 <h3>Applicant &amp; Treatment</h3>
                 <div className="review-item"><strong>Name:</strong> {formData.fullName || '—'}</div>
                 <div className="review-item"><strong>Location:</strong> {[formData.state, formData.city].filter(Boolean).join(', ') || '—'}</div>
-                <div className="review-item"><strong>Hospital:</strong> {formData.hospitalName} {formData.isPartnerSuggested ? '(Partner)' : ''}</div>
+                <div className="review-item"><strong>Hospital:</strong> {formData.hospitalName} {formData.isPartnerSuggested ? '(Partner)' : '(Not yet a partner)'}</div>
+                {!formData.isPartnerSuggested && formData.hospitalPhone && (
+                  <div className="review-item"><strong>Hospital Contact:</strong> {formData.hospitalPhone}{formData.hospitalEmail ? ` · ${formData.hospitalEmail}` : ''}</div>
+                )}
                 <div className="review-item"><strong>Treatment:</strong> {formData.treatmentCategory || '—'}</div>
                 <div className="review-item"><strong>Urgency:</strong> {formData.urgency || '—'}</div>
                 {formData.documents?.id_document && <div className="review-item"><strong>Govt. ID:</strong> {formData.documents.id_document.fileName}</div>}
