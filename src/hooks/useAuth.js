@@ -13,6 +13,9 @@ export const useAuth = () => {
     }
 
     checkAuth()
+
+    window.addEventListener('carecova:session-cleared', checkAuth)
+    return () => window.removeEventListener('carecova:session-cleared', checkAuth)
   }, [])
 
   const login = async (username, password) => {

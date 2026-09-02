@@ -92,6 +92,7 @@ function saveSession(session) {
 
 function clearSession() {
   localStorage.removeItem(ADMIN_STORAGE_KEY)
+  window.dispatchEvent(new Event('carecova:session-cleared'))
 }
 
 async function parseResponseBody(response) {
@@ -2008,6 +2009,29 @@ export const adminService = {
         reject(error)
       }
     })
+  },
+
+  // ── Timed delete (super_admin only, 7-day grace period) ─────────────────
+
+  deleteApplication: async (loanId) => {
+    requireBackendFeature('Delete application')
+    const trimmed = assertBackendLoanId(loanId, 'Delete application')
+    return adminRequest(`/admin/loan-applications/${encodeURIComponent(trimmed)}`, {
+      method: 'DELETE',
+    })
+  },
+
+  restoreApplication: async (loanId) => {
+    requireBackendFeature('Restore application')
+    const trimmed = assertBackendLoanId(loanId, 'Restore application')
+    return adminRequest(`/admin/loan-applications/${encodeURIComponent(trimmed)}/restore`, {
+      method: 'POST',
+    })
+  },
+
+  getTrashApplications: async () => {
+    requireBackendFeature('Trash applications')
+    return adminRequest('/admin/loan-applications/trash')
   },
 }
 
