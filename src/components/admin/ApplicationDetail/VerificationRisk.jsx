@@ -41,7 +41,13 @@ export default function VerificationRisk({
       const updated = await adminService.verifyBvnForLoan(loan.id)
       if (onUpdated) onUpdated(updated)
     } catch (err) {
-      setBvnError(err.message || 'BVN verification failed')
+      const raw = err.message || ''
+      const isMonoServiceError = /not available for your business|contact support/i.test(raw)
+      setBvnError(
+        isMonoServiceError
+          ? 'BVN verification is not yet enabled on your Mono account. Go to the Mono dashboard → Services and activate "BVN Lookup" for your business.'
+          : raw || 'BVN verification failed'
+      )
     } finally {
       setBvnVerifying(false)
     }
