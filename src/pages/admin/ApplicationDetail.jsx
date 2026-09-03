@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { adminService } from '../../services/adminService'
 import { auditService } from '../../services/auditService'
@@ -66,6 +66,25 @@ export default function ApplicationDetail() {
     const [assignProviderError, setAssignProviderError] = useState('')
     const [pdfDownloading, setPdfDownloading] = useState(false)
     const [pdfError, setPdfError] = useState('')
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const [deleting, setDeleting] = useState(false)
+    const [deleteResult, setDeleteResult] = useState(null)
+
+    const isSuperAdmin = session?.role === 'super_admin'
+
+    const handleDelete = useCallback(async () => {
+        setDeleting(true)
+        try {
+            const result = await adminService.deleteApplication(loan.id)
+            setDeleteResult(result)
+            setShowDeleteConfirm(false)
+        } catch (err) {
+            setDeleteResult({ error: err.message || 'Delete failed' })
+            setShowDeleteConfirm(false)
+        } finally {
+            setDeleting(false)
+        }
+    }, [loan?.id])
 
     const loadLoanDetails = async ({ silent = false } = {}) => {
         try {
@@ -263,9 +282,18 @@ export default function ApplicationDetail() {
                             )}
                         </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, flexWrap: 'wrap' }}>
                         <StatusBadge status={loan.status} financingStatus={loan.financing_status} />
                         <span className="stage-pill">{getStageLabel(loan)}</span>
+                        {isSuperAdmin && !loan.deletedAt && (
+                            <button
+                                className="button button--danger button--compact"
+                                style={{ marginLeft: '8px' }}
+                                onClick={() => setShowDeleteConfirm(true)}
+                            >
+                                🗑 Delete
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -399,6 +427,43 @@ export default function ApplicationDetail() {
                                 state={sectionStates.documents}
                             />
                             <div className="detail-card">
+
+                                {/* ── Submission documents ── */}
+                                <p style={{ margin: '0 0 10px', fontWeight: 700, fontSize: '0.8125rem', color: '#374151' }}>Submitted with application</p>
+                                {[
+                                    { key: 'id_document', label: 'Government-issued ID' },
+                                    { key: 'treatment_estimate', label: 'Treatment Estimate' },
+                                    { key: 'payslip', label: 'Pay Slip' },
+                                ].map(({ key, label }) => {
+                                    const doc = loan.documents?.[key]
+                                    const hasUrl = !!doc?.url
+                                    return (
+                                        <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', borderBottom: '1px solid #f3f4f6', fontSize: '0.8125rem' }}>
+                                            <span style={{ fontSize: '1rem' }}>{hasUrl ? '✅' : '⬜'}</span>
+                                            <div style={{ flex: 1 }}>
+                                                <span style={{ fontWeight: 600 }}>{label}</span>
+                                                {doc?.fileName && <span style={{ color: '#6b7280', marginLeft: '6px' }}>— {doc.fileName}</span>}
+                                                {!hasUrl && <span style={{ color: '#9ca3af', marginLeft: '6px', fontStyle: 'italic' }}>not uploaded</span>}
+                                            </div>
+                                            {hasUrl && (
+                                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                    <a href={doc.url} target="_blank" rel="noopener noreferrer"
+                                                        style={{ color: '#2563eb', fontSize: '0.75rem', textDecoration: 'underline' }}>View</a>
+                                                    <a href={doc.url} download={doc.fileName}
+                                                        style={{ color: '#059669', fontSize: '0.75rem', textDecoration: 'underline' }}>Download</a>
+                                                    <button
+                                                        onClick={() => { navigator.clipboard.writeText(doc.url) }}
+                                                        style={{ fontSize: '0.75rem', color: '#7c3aed', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                                                        Share link
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )
+                                })}
+
+                                {/* ── Requested documents ── */}
+                                <p style={{ margin: '16px 0 10px', fontWeight: 700, fontSize: '0.8125rem', color: '#374151' }}>Requested documents</p>
                                 {loan.documentRequests?.length > 0 ? (
                                     <div style={{ marginBottom: '12px' }}>
                                         {loan.documentRequests.map((doc) => (
@@ -409,7 +474,17 @@ export default function ApplicationDetail() {
                                                     {doc.note && <span style={{ color: '#6b7280', marginLeft: '6px' }}>— {doc.note}</span>}
                                                 </div>
                                                 {doc.status === 'uploaded' && doc.fileUrl && (
-                                                    <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', fontSize: '0.75rem' }}>View</a>
+                                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                        <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer"
+                                                            style={{ color: '#2563eb', fontSize: '0.75rem', textDecoration: 'underline' }}>View</a>
+                                                        <a href={doc.fileUrl} download={doc.fileName}
+                                                            style={{ color: '#059669', fontSize: '0.75rem', textDecoration: 'underline' }}>Download</a>
+                                                        <button
+                                                            onClick={() => { navigator.clipboard.writeText(doc.fileUrl) }}
+                                                            style={{ fontSize: '0.75rem', color: '#7c3aed', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                                                            Share link
+                                                        </button>
+                                                    </div>
                                                 )}
                                             </div>
                                         ))}
@@ -419,7 +494,7 @@ export default function ApplicationDetail() {
                                 )}
                                 <button
                                     onClick={() => setShowRequestDocs(true)}
-                                    style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: '7px', padding: '8px 14px', color: '#1d4ed8', fontWeight: 600, fontSize: '0.8125rem', cursor: 'pointer', width: '100%' }}
+                                    style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: '7px', padding: '8px 14px', color: '#1d4ed8', fontWeight: 600, fontSize: '0.8125rem', cursor: 'pointer', width: '100%', marginTop: '4px' }}
                                 >
                                     Request Documents from Applicant
                                 </button>
@@ -599,6 +674,73 @@ export default function ApplicationDetail() {
                     openFeedback('Documents Requested', loan.email ? `Upload link sent to ${loan.email}` : 'Upload link generated — no email on file.')
                 }}
             />
+        )}
+
+        {/* Delete confirmation modal */}
+        <Modal
+            isOpen={showDeleteConfirm}
+            onClose={() => setShowDeleteConfirm(false)}
+            title="Delete Application"
+            size="sm"
+            footer={
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <button className="button button--secondary" onClick={() => setShowDeleteConfirm(false)}>Cancel</button>
+                    <button className="button button--danger" onClick={handleDelete} disabled={deleting}>
+                        {deleting ? 'Deleting…' : 'Yes, delete'}
+                    </button>
+                </div>
+            }
+        >
+            <p className="text-sm" style={{ marginBottom: '8px' }}>
+                This will move <strong>{loan?.fullName || loan?.patientName || 'this application'}</strong> to the trash.
+            </p>
+            <p className="text-sm text-muted">
+                The record will be permanently deleted in <strong>7 days</strong>. You can restore it before then from the Trash tab on the Applications page.
+            </p>
+        </Modal>
+
+        {/* Delete result banner */}
+        {deleteResult && (
+            <div
+                style={{
+                    position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999,
+                    padding: '14px 18px', borderRadius: '10px', maxWidth: '360px',
+                    background: deleteResult.error ? '#fef2f2' : '#f0fdf4',
+                    border: `1px solid ${deleteResult.error ? '#fecaca' : '#bbf7d0'}`,
+                    color: deleteResult.error ? '#dc2626' : '#15803d',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                }}
+            >
+                <div style={{ fontWeight: 600, marginBottom: '4px' }}>
+                    {deleteResult.error ? 'Delete failed' : 'Application queued for deletion'}
+                </div>
+                <div style={{ fontSize: '0.8125rem' }}>
+                    {deleteResult.error || deleteResult.message}
+                </div>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                    {!deleteResult.error && (
+                        <button
+                            className="button button--secondary button--compact"
+                            onClick={async () => {
+                                await adminService.restoreApplication(loan.id)
+                                setDeleteResult(null)
+                                loadLoanDetails({ silent: true })
+                            }}
+                        >
+                            Undo
+                        </button>
+                    )}
+                    <button
+                        className="button button--ghost button--compact"
+                        onClick={() => {
+                            setDeleteResult(null)
+                            if (!deleteResult.error) navigate('/admin/applications')
+                        }}
+                    >
+                        {deleteResult.error ? 'Dismiss' : 'Back to list'}
+                    </button>
+                </div>
+            </div>
         )}
         </>
     )

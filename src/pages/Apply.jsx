@@ -115,6 +115,8 @@ export default function Apply() {
   const [loading, setLoading] = useState(false)
   const [uploadingIdDocument, setUploadingIdDocument] = useState(false)
   const [uploadingApplicantPhoto, setUploadingApplicantPhoto] = useState(false)
+  const [uploadingTreatmentEstimate, setUploadingTreatmentEstimate] = useState(false)
+  const [uploadingPayslip, setUploadingPayslip] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [loanId, setLoanId] = useState(null)
   const [applicationCode, setApplicationCode] = useState(null)
@@ -891,6 +893,61 @@ export default function Apply() {
                 {errors.healthDescription && <span className="input-error">{errors.healthDescription}</span>}
               </div>
               <Select label="Urgency" options={URGENCY_OPTIONS} value={formData.urgency} onChange={(e) => handleChange('urgency', e.target.value)} onBlur={() => setErrors((prev) => ({ ...prev, ...validateStep(2, formData) }))} error={errors.urgency} required />
+
+              <div style={{ gridColumn: '1 / -1', marginTop: '1rem', borderTop: '1px solid #ddd', paddingTop: '1rem' }}>
+                <label className="input-label">Hospital treatment estimate / quote <span style={{ color: '#6b7280', fontWeight: 400 }}>(optional but recommended)</span></label>
+                <p className="caption" style={{ marginTop: '0.25rem' }}>Upload the cost estimate or quote from your hospital or clinic. PDF, JPG, or PNG.</p>
+                {formData.documents?.treatment_estimate ? (
+                  <div className="document-upload-file" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                    <span className="document-file-name">{formData.documents.treatment_estimate.fileName}</span>
+                    <span className="document-file-size" style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+                      ({formData.documents.treatment_estimate.fileSize < 1024 * 1024
+                        ? `${(formData.documents.treatment_estimate.fileSize / 1024).toFixed(1)} KB`
+                        : `${(formData.documents.treatment_estimate.fileSize / (1024 * 1024)).toFixed(1)} MB`})
+                    </span>
+                    <button type="button" className="document-remove" style={{ marginLeft: 'auto', padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
+                      onClick={() => setFormData((prev) => ({ ...prev, documents: { ...prev.documents, treatment_estimate: null } }))}>
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="document-upload-input"
+                    style={{ marginTop: '0.5rem', display: 'block' }}
+                    disabled={uploadingTreatmentEstimate}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      setUploadingTreatmentEstimate(true)
+                      try {
+                        const uploaded = await uploadFileToCloudinary(file, { folder: 'carecova/treatment-estimates' })
+                        setFormData((prev) => ({
+                          ...prev,
+                          documents: {
+                            ...prev.documents,
+                            treatment_estimate: {
+                              fileName: uploaded.fileName,
+                              fileSize: uploaded.fileSize,
+                              mimeType: uploaded.mimeType,
+                              url: uploaded.url,
+                              storageKey: uploaded.storageKey,
+                            },
+                          },
+                        }))
+                      } catch (error) {
+                        setErrors((prev) => ({ ...prev, treatment_estimate: error.message || 'Failed to upload estimate' }))
+                      } finally {
+                        setUploadingTreatmentEstimate(false)
+                        e.target.value = ''
+                      }
+                    }}
+                  />
+                )}
+                {uploadingTreatmentEstimate && <span className="caption" style={{ display: 'block', marginTop: '0.4rem' }}>Uploading estimate...</span>}
+                {errors.treatment_estimate && <span className="input-error">{errors.treatment_estimate}</span>}
+              </div>
             </div>
           </div>
         )
@@ -939,6 +996,61 @@ export default function Apply() {
 
               <MoneyInput label="Monthly income" placeholder="₦ 0.00" value={formData.monthlyIncome} onChange={(v) => handleChange('monthlyIncome', v)} error={errors.monthlyIncome} required />
               <MoneyInput label="Monthly expenses" placeholder="₦ 0.00" value={formData.monthlyExpenses} onChange={(v) => handleChange('monthlyExpenses', v)} error={errors.monthlyExpenses} required />
+
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label className="input-label">Pay slip <span style={{ color: '#6b7280', fontWeight: 400 }}>(optional)</span></label>
+                <p className="caption" style={{ marginTop: '0.25rem' }}>Most recent pay slip for income verification. PDF, JPG, or PNG.</p>
+                {formData.documents?.payslip ? (
+                  <div className="document-upload-file" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                    <span className="document-file-name">{formData.documents.payslip.fileName}</span>
+                    <span className="document-file-size" style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+                      ({formData.documents.payslip.fileSize < 1024 * 1024
+                        ? `${(formData.documents.payslip.fileSize / 1024).toFixed(1)} KB`
+                        : `${(formData.documents.payslip.fileSize / (1024 * 1024)).toFixed(1)} MB`})
+                    </span>
+                    <button type="button" className="document-remove" style={{ marginLeft: 'auto', padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
+                      onClick={() => setFormData((prev) => ({ ...prev, documents: { ...prev.documents, payslip: null } }))}>
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="document-upload-input"
+                    style={{ marginTop: '0.5rem', display: 'block' }}
+                    disabled={uploadingPayslip}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      setUploadingPayslip(true)
+                      try {
+                        const uploaded = await uploadFileToCloudinary(file, { folder: 'carecova/payslips' })
+                        setFormData((prev) => ({
+                          ...prev,
+                          documents: {
+                            ...prev.documents,
+                            payslip: {
+                              fileName: uploaded.fileName,
+                              fileSize: uploaded.fileSize,
+                              mimeType: uploaded.mimeType,
+                              url: uploaded.url,
+                              storageKey: uploaded.storageKey,
+                            },
+                          },
+                        }))
+                      } catch (error) {
+                        setErrors((prev) => ({ ...prev, payslip: error.message || 'Failed to upload pay slip' }))
+                      } finally {
+                        setUploadingPayslip(false)
+                        e.target.value = ''
+                      }
+                    }}
+                  />
+                )}
+                {uploadingPayslip && <span className="caption" style={{ display: 'block', marginTop: '0.4rem' }}>Uploading pay slip...</span>}
+                {errors.payslip && <span className="input-error">{errors.payslip}</span>}
+              </div>
 
               <div className="form-section-label" style={{ gridColumn: '1 / -1', marginTop: '1rem', borderTop: '1px solid #ddd', paddingTop: '1rem' }}>
                 <h3>Credit Request</h3>

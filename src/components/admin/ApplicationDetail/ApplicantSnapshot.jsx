@@ -226,17 +226,37 @@ export default function ApplicantSnapshot({ loan, onUpdated }) {
                     {['id_document', 'treatment_estimate', 'payslip'].map(docKey => {
                         const status = getDocumentStatus(docKey)
                         const doc = loan.documents?.[docKey]
+                        const hasUrl = !!doc?.url
                         return (
-                            <div key={docKey} className="doc-item">
+                            <div key={docKey} className="doc-item" style={{ alignItems: 'flex-start' }}>
                                 <div className="doc-info">
                                     <span className="doc-icon">📄</span>
                                     <div>
                                         <div className="doc-name">{formatDocName(docKey)}</div>
-                                        {doc && doc.fileName && <div className="doc-meta">{doc.fileName}</div>}
+                                        {doc?.fileName && <div className="doc-meta">{doc.fileName}</div>}
                                     </div>
                                 </div>
-                                <div className={`doc-status status-${status}`}>
-                                    {status === 'uploaded' ? '✓ Uploaded' : '❌ Missing'}
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                                    <div className={`doc-status status-${status}`}>
+                                        {hasUrl ? '✓ Uploaded' : '❌ Missing'}
+                                    </div>
+                                    {hasUrl && (
+                                        <div style={{ display: 'flex', gap: '6px' }}>
+                                            <a href={doc.url} target="_blank" rel="noopener noreferrer"
+                                                style={{ fontSize: '0.72rem', color: '#2563eb', textDecoration: 'underline' }}>
+                                                View
+                                            </a>
+                                            <a href={doc.url} download={doc.fileName}
+                                                style={{ fontSize: '0.72rem', color: '#059669', textDecoration: 'underline' }}>
+                                                Download
+                                            </a>
+                                            <button
+                                                onClick={() => navigator.clipboard.writeText(doc.url)}
+                                                style={{ fontSize: '0.72rem', color: '#7c3aed', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                                                Share link
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )
