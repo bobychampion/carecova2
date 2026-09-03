@@ -76,7 +76,7 @@ export default function AdminLogin() {
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="e.g. superadmin or superadmin@carecova.com"
+            placeholder="Enter your username or email"
             required
             autoFocus
           />
@@ -92,7 +92,7 @@ export default function AdminLogin() {
           </Button>
         </form>
         <div className="login-note">
-          <p>Use your backend admin credentials. If login fails, try your email instead of username, or confirm the password (min 8 characters).</p>
+          <p>Contact your administrator if you have trouble signing in.</p>
         </div>
       </div>
     </div>

@@ -281,34 +281,46 @@ function assertBackendLoanId(loanId, featureName) {
 export const adminService = {
   login: async (username, password) => {
     if (USE_BACKEND) {
+      let response
       try {
-        const response = await fetch(`${API_ROOT}/admins/auth/login`, {
+        response = await fetch(`${API_ROOT}/admins/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ usernameOrEmail: username, password }),
         })
-        const { isJson, body } = await parseResponseBody(response)
-        if (!response.ok) throw new Error(getResponseMessage(body, isJson, 'Invalid credentials'))
-
-        const admin = body.admin || {}
-        const role = mapBackendRole(admin.role)
-        const name = admin.displayName || admin.name || admin.username || username
-        const session = {
-          loggedIn: true,
-          loginTime: new Date().toISOString(),
-          accessToken: body.accessToken,
-          refreshToken: body.refreshToken,
-          admin: { ...admin, role, displayName: admin.displayName || name },
-          username: admin.username || username,
-          role,
-          name,
-        }
-        saveSession(session)
-        auditService.record('login', { adminName: name, role })
-        return { username: session.username, role, name, loggedIn: true, loginTime: session.loginTime }
       } catch (err) {
+        if (err instanceof TypeError) {
+          throw new Error(
+            `Unable to reach the backend at ${API_ROOT}. ` +
+            'The server may be starting up — please wait 30 seconds and try again.',
+          )
+        }
         throw err
       }
+      const { isJson, body } = await parseResponseBody(response)
+      if (!response.ok) throw new Error(getResponseMessage(body, isJson, 'Invalid credentials'))
+
+      const admin = body.admin || {}
+      const role = mapBackendRole(admin.role)
+      const name = admin.displayName || admin.name || admin.username || username
+      // Backend may return accessToken or token — accept both
+      const accessToken = body.accessToken || body.token
+      if (!accessToken) {
+        throw new Error('Login succeeded but no access token was returned. Check the backend response.')
+      }
+      const session = {
+        loggedIn: true,
+        loginTime: new Date().toISOString(),
+        accessToken,
+        refreshToken: body.refreshToken,
+        admin: { ...admin, role, displayName: admin.displayName || name },
+        username: admin.username || username,
+        role,
+        name,
+      }
+      saveSession(session)
+      auditService.record('login', { adminName: name, role })
+      return { username: session.username, role, name, loggedIn: true, loginTime: session.loginTime }
     }
 
     return new Promise((resolve, reject) => {
